@@ -42,7 +42,7 @@ const authSteps: AuthStep[] = [
     readerData: "初始化 Crypto1 LFSR...",
     cardData: "同步初始化 Crypto1...",
     explanation: "使用 48-bit 金鑰、UID 和 nT 初始化 Crypto1 的 48-bit LFSR 狀態",
-    details: "Crypto1 初始化：Key ⊕ (UID:DEADBEEF ⊕ nT:4C983BF2) → LFSR 初始狀態。48-bit LFSR 使用反饋多項式 x^48 + x^43 + x^39 + x^38 + x^36 + x^34 + x^33 + x^31 + x^17 + x^15 + x^13 + x^12 + x^10 + x^8 + x^5 + x^2 + x + 1",
+    details: "Crypto1 初始化：Key ⊕ (UID:DEADBEEF ⊕ nT:4C983BF2) → LFSR 初始狀態。\n\n48-bit LFSR 使用反饋多項式 x^48 + x^43 + x^39 + x^38 + x^36 + x^34 + x^33 + x^31 + x^17 + x^15 + x^13 + x^12 + x^10 + x^8 + x^5 + x^2 + x + 1",
   },
   {
     id: 4,
@@ -51,7 +51,7 @@ const authSteps: AuthStep[] = [
     readerData: "計算 nR 和 aR...",
     cardData: "等待認證挑戰...",
     explanation: "讀卡機產生 nR，並計算 aR = suc2(nT) ⊕ nR",
-    details: "nR (Reader Nonce) 為 32-bit 隨機數。aR 計算：先對 nT 進行 suc2() 運算（Crypto1 加密的一種），再與 nR 進行 XOR。這證明讀卡機擁有正確金鑰。",
+    details: "nR (Reader Nonce) 為 32-bit 隨機數。aR 計算：先對 nT 進行 suc2() 運算，再與 nR 進行 XOR。\n\nsuc2() 函數定義：\nsuc2(x) = successor(successor(x))\n其中 successor(x) 表示 LFSR 向前移動一步的輸出。suc2() 函數將 32-bit 輸入通過 Crypto1 LFSR 處理兩次，產生對應的 32-bit 輸出，這證明讀卡機擁有正確金鑰。",
   },
   {
     id: 5,
@@ -60,7 +60,7 @@ const authSteps: AuthStep[] = [
     readerData: "nR+aR: 8A347D2E B6F81290", // encrypted nR + aR
     cardData: "接收並解密驗證...",
     explanation: "所有後續通訊都經過 Crypto1 加密，卡片需驗證 aR 的正確性",
-    details: "數據格式：[nR_encrypted(4bytes)][aR_encrypted(4bytes)]。Crypto1 採用串流加密，每個 bit 都與 keystream 進行 XOR。卡片解密後會重新計算 aR 進行驗證。",
+    details: "數據格式：[nR_encrypted(4bytes)][aR_encrypted(4bytes)]。\n\nCrypto1 採用串流加密，每個 bit 都與 keystream 進行 XOR。卡片解密後會重新計算 aR 進行驗證。",
   },
   {
     id: 6,
@@ -69,7 +69,7 @@ const authSteps: AuthStep[] = [
     readerData: "等待卡片確認...",
     cardData: "解密並驗證 aR...",
     explanation: "卡片重新計算預期的 aR 值，與收到的值比較確認讀卡機身份",
-    details: "驗證過程：解密 nR 和 aR → 重新計算 aR' = suc2(nT) ⊕ nR → 比較 aR == aR'。成功則確認讀卡機擁有正確金鑰，否則中止驗證程序。",
+    details: "驗證過程：解密 nR 和 aR → 重新計算 aR' = suc2(nT) ⊕ nR → 比較 aR == aR'。\n\n成功則確認讀卡機擁有正確金鑰，否則中止驗證程序。",
   },
   {
     id: 7,
@@ -78,7 +78,7 @@ const authSteps: AuthStep[] = [
     readerData: "等待卡片身份證明...",
     cardData: "計算 aT = suc3(nR)...",
     explanation: "卡片計算 aT = suc3(nR) 證明自己也擁有正確的金鑰",
-    details: "aT 計算使用 suc3() 函數對 nR 進行運算。suc3() 是 Crypto1 的另一個原語，與 suc2() 類似但使用不同的參數。這實現了相互驗證的第二部分。",
+    details: "aT 計算使用 suc3() 函數對 nR 進行運算。\n\nsuc3() 函數定義：\nsuc3(x) = successor(successor(successor(x)))\n與 suc2() 類似，但 suc3() 將輸入通過 LFSR 處理三次。這實現了相互驗證的第二部分，確保卡片也擁有相同的金鑰和 LFSR 狀態。",
   },
   {
     id: 8,
@@ -87,7 +87,7 @@ const authSteps: AuthStep[] = [
     readerData: "接收並驗證 aT...",
     cardData: "aT: F16AC95B", // encrypted aT
     explanation: "讀卡機收到 aT 後進行解密和驗證，確認卡片的合法性",
-    details: "aT 經 Crypto1 加密傳輸。讀卡機解密後重新計算 aT' = suc3(nR) 進行比較。驗證成功後，雙方確認彼此身份，建立安全通道。",
+    details: "aT 經 Crypto1 加密傳輸。讀卡機解密後重新計算 aT' = suc3(nR) 進行比較。\n\n驗證成功後，雙方確認彼此身份，建立安全通道。",
   },
   {
     id: 9,
@@ -96,7 +96,7 @@ const authSteps: AuthStep[] = [
     readerData: "驗證成功，通道建立",
     cardData: "準備接收後續指令",
     explanation: "雙方完成相互驗證，建立基於 Crypto1 的加密通訊通道",
-    details: "驗證完成後，所有後續通訊都會使用 Crypto1 加密。LFSR 狀態會隨著每個 bit 的傳輸而更新，確保 keystream 的動態性。現在可以安全地進行讀寫操作。",
+    details: "驗證完成後，所有後續通訊都會使用 Crypto1 加密。\n\nLFSR 狀態會隨著每個 bit 的傳輸而更新，確保 keystream 的動態性。現在可以安全地進行讀寫操作。",
   }
 ];
 
@@ -230,7 +230,7 @@ const CardInfoStructure = ({ isActive }: { isActive: boolean }) => {
           </div>
           
           <div className="text-xs text-slate-400 mt-2">
-            48-bit 寫入權限金鑰 - 用於寫入數據塊、修改存取條件（通常隱藏不可讀取）
+            48-bit 寫入權限金鑰 - 用於寫入數據塊、修改存取條件<br />（通常隱藏不可讀取）
           </div>
         </div>
 
@@ -343,12 +343,15 @@ export default function AuthenticationPage() {
                   <div className="text-center">
                     <motion.div 
                       animate={{
-                        scale: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? [1, 1.1, 1] : 1,
-                        boxShadow: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? 
+                        scale: (authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) || 
+                                (currentStep === 2 || currentStep === 3 || currentStep === 5)) ? [1, 1.1, 1] : 1,
+                        boxShadow: (authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) || 
+                                   (currentStep === 2 || currentStep === 3 || currentStep === 5)) ? 
                           ['0 0 0px rgba(34, 197, 94, 0.5)', '0 0 20px rgba(34, 197, 94, 0.8)', '0 0 0px rgba(34, 197, 94, 0.5)'] : 
                           '0 0 0px rgba(34, 197, 94, 0.5)'
                       }}
-                      transition={{ duration: 1, repeat: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? Infinity : 0 }}
+                      transition={{ duration: 1, repeat: (authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) || 
+                                                          (currentStep === 2 || currentStep === 3 || currentStep === 5 || currentStep === 8)) ? Infinity : 0 }}
                       className="w-24 h-32 bg-gradient-to-b from-green-500 to-green-700 rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center"
                     >
                       <span className="text-white text-2xl">📡</span>
@@ -444,26 +447,60 @@ export default function AuthenticationPage() {
                         {/* LFSR 狀態動畫 */}
                         {currentStep === 2 && (
                           <div className="text-center space-y-3">
-                            <div className="text-yellow-400 text-sm font-bold">🔐 Crypto1 初始化</div>
+                            <div className="text-yellow-400 text-sm font-bold">🔐 雙方同步初始化 Crypto1</div>
                             <div className="flex items-center justify-center gap-1">
-                              {Array.from({length: 12}, (_, i) => (
-                                <motion.div
-                                  key={i}
-                                  initial={{ scale: 0, backgroundColor: "#475569" }}
-                                  animate={{ 
-                                    scale: [0, 1.2, 1],
-                                    backgroundColor: ["#475569", "#fbbf24", "#22c55e"]
-                                  }}
-                                  transition={{ 
-                                    delay: i * 0.1,
-                                    duration: 0.5
-                                  }}
-                                  className="w-3 h-6 rounded-sm"
-                                />
-                              ))}
+                              {Array.from({length: 32}, (_, i) => {
+                                // 實際計算 UID ⊕ nT 的二進制位元，使用無號數運算
+                                const uid = 0xDEADBEEF >>> 0; // 轉換為無號 32-bit
+                                const nt = 0x4C983BF2 >>> 0;  // 轉換為無號 32-bit
+                                const xorResult = (uid ^ nt) >>> 0; // 確保結果為無號數
+                                
+                                // 取得第 i 個位元（從最高位開始）
+                                const bitPosition = 31 - i;
+                                const displayBit = (xorResult >>> bitPosition) & 1;
+                                
+                                return (
+                                  <motion.div
+                                    key={i}
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ 
+                                      scale: [0, 1.2, 1],
+                                      opacity: 1,
+                                      backgroundColor: displayBit ? "#22c55e" : "#ef4444"
+                                    }}
+                                    transition={{ 
+                                      delay: i * 0.05,
+                                      duration: 0.6
+                                    }}
+                                    className="w-2 h-6 rounded-sm flex items-center justify-center text-white text-xs font-mono"
+                                  >
+                                    {displayBit}
+                                  </motion.div>
+                                );
+                              })}
                             </div>
-                            <div className="text-yellow-400 font-mono text-xs">
-                              Key ⊕ (UID ⊕ nT)
+                            <div className="space-y-1">
+                              <motion.div 
+                                animate={{ opacity: [0.5, 1, 0.5] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                className="text-yellow-400 font-mono text-xs"
+                              >
+                                UID: DEADBEEF ⊕ nT: 4C983BF2
+                              </motion.div>
+                              <motion.div
+                                animate={{ opacity: [0.3, 0.8, 0.3] }}
+                                transition={{ duration: 2, delay: 0.5, repeat: Infinity }}
+                                className="text-green-400 font-mono text-xs"
+                              >
+                                = {(((0xDEADBEEF >>> 0) ^ (0x4C983BF2 >>> 0)) >>> 0).toString(16).toUpperCase().padStart(8, '0')} (hex)
+                              </motion.div>
+                              <motion.div
+                                animate={{ opacity: [0.3, 0.8, 0.3] }}
+                                transition={{ duration: 2, delay: 1, repeat: Infinity }}
+                                className="text-slate-400 font-mono text-xs"
+                              >
+                                = {(((0xDEADBEEF >>> 0) ^ (0x4C983BF2 >>> 0)) >>> 0).toString(2).padStart(32, '0')}
+                              </motion.div>
                             </div>
                           </div>
                         )}
@@ -472,9 +509,9 @@ export default function AuthenticationPage() {
                         {(currentStep === 3 || currentStep === 5 || currentStep === 6) && (
                           <div className="text-center space-y-3">
                             <div className="text-yellow-400 text-sm font-bold">
-                              {currentStep === 3 && "🔐 產生認證數據"}
-                              {currentStep === 5 && "🔐 解密與驗證"}
-                              {currentStep === 6 && "🔐 計算回應認證"}
+                              {currentStep === 3 && "🔐 讀卡機產生認證數據"}
+                              {currentStep === 5 && "🔐 讀卡機解密與驗證"}
+                              {currentStep === 6 && "🔐 卡片計算回應認證"}
                             </div>
                             
                             <motion.div
@@ -491,22 +528,54 @@ export default function AuthenticationPage() {
                               <span className="text-yellow-400 text-xs font-bold">LFSR</span>
                             </motion.div>
                             
-                            <motion.div
-                              animate={{ opacity: [0.6, 1, 0.6] }}
-                              transition={{ duration: 1.5, repeat: Infinity }}
-                              className="font-mono text-xs"
-                            >
-                              {currentStep === 3 && <div className="text-green-400">aR = suc2(nT) ⊕ nR</div>}
-                              {currentStep === 5 && <div className="text-orange-400">verify aR</div>}
-                              {currentStep === 6 && <div className="text-purple-400">aT = suc3(nR)</div>}
-                            </motion.div>
+                            <div className="space-y-2">
+                              {currentStep === 3 && (
+                                <>
+                                  <motion.div
+                                    animate={{ opacity: [0.6, 1, 0.6] }}
+                                    transition={{ duration: 1.5, repeat: Infinity }}
+                                    className="font-mono text-xs space-y-1"
+                                  >
+                                    <div className="text-blue-400">nR = A1B2C3D4 (假設值)</div>
+                                    <div className="text-slate-400">suc2(nT: 4C983BF2) = 計算中...</div>
+                                    <div className="text-green-400">aR = suc2(nT) ⊕ nR</div>
+                                  </motion.div>
+                                </>
+                              )}
+                              {currentStep === 5 && (
+                                <>
+                                  <motion.div
+                                    animate={{ opacity: [0.6, 1, 0.6] }}
+                                    transition={{ duration: 1.5, repeat: Infinity }}
+                                    className="font-mono text-xs space-y-1"
+                                  >
+                                    <div className="text-orange-400">接收: 8A347D2E B6F81290</div>
+                                    <div className="text-orange-400">解密 nR: 8A347D2E → 明文 nR</div>
+                                    <div className="text-orange-400">解密 aR: B6F81290 → 明文 aR</div>
+                                    <div className="text-green-400">驗證: aR ?= suc2(nT) ⊕ nR</div>
+                                  </motion.div>
+                                </>
+                              )}
+                              {currentStep === 6 && (
+                                <>
+                                  <motion.div
+                                    animate={{ opacity: [0.6, 1, 0.6] }}
+                                    transition={{ duration: 1.5, repeat: Infinity }}
+                                    className="font-mono text-xs space-y-1"
+                                  >
+                                    <div className="text-purple-400">計算: aT = suc3(nR)</div>
+                                    <div className="text-yellow-400">準備加密 aT 進行傳送</div>
+                                  </motion.div>
+                                </>
+                              )}
+                            </div>
                           </div>
                         )}
 
                         {/* 狀態同步動畫 */}
                         {currentStep === 8 && (
                           <div className="text-center space-y-3">
-                            <div className="text-yellow-400 text-sm font-bold">🔐 建立安全通道</div>
+                            <div className="text-yellow-400 text-sm font-bold">🔐 讀卡機驗證 aT</div>
                             <div className="flex items-center justify-center gap-4">
                               <motion.div
                                 animate={{ 
@@ -536,7 +605,17 @@ export default function AuthenticationPage() {
                                 <span className="text-white text-xs">C</span>
                               </motion.div>
                             </div>
-                            <div className="text-xs text-slate-400">同步 LFSR 狀態</div>
+                            <div className="space-y-1">
+                              <motion.div
+                                animate={{ opacity: [0.6, 1, 0.6] }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                                className="font-mono text-xs space-y-1"
+                              >
+                                <div className="text-green-400">接收 aT: F16AC95B</div>
+                                <div className="text-orange-400">解密並驗證 aT 正確性</div>
+                                <div className="text-yellow-400">雙方 LFSR 狀態同步完成</div>
+                              </motion.div>
+                            </div>
                           </div>
                         )}
                       </motion.div>
@@ -547,12 +626,15 @@ export default function AuthenticationPage() {
                   <div className="text-center">
                     <motion.div 
                       animate={{
-                        scale: authSteps[currentStep]?.cardData?.match(/^(nT|aT):/) ? [1, 1.1, 1] : 1,
-                        boxShadow: authSteps[currentStep]?.cardData?.match(/^(nT|aT):/) ? 
+                        scale: (authSteps[currentStep]?.cardData?.match(/^(nT|aT):/) || 
+                                (currentStep === 2 || currentStep === 6)) ? [1, 1.1, 1] : 1,
+                        boxShadow: (authSteps[currentStep]?.cardData?.match(/^(nT|aT):/) || 
+                                   (currentStep === 2 || currentStep === 6)) ? 
                           ['0 0 0px rgba(147, 51, 234, 0.5)', '0 0 20px rgba(147, 51, 234, 0.8)', '0 0 0px rgba(147, 51, 234, 0.5)'] : 
                           '0 0 0px rgba(147, 51, 234, 0.5)'
                       }}
-                      transition={{ duration: 1, repeat: authSteps[currentStep]?.cardData?.match(/^(nT|aT):/) ? Infinity : 0 }}
+                      transition={{ duration: 1, repeat: (authSteps[currentStep]?.cardData?.match(/^(nT|aT):/) || 
+                                                          (currentStep === 2 || currentStep === 6)) ? Infinity : 0 }}
                       className="w-20 h-28 bg-gradient-to-b from-purple-500 to-purple-700 rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center"
                     >
                       <span className="text-white text-2xl">💳</span>
@@ -590,7 +672,12 @@ export default function AuthenticationPage() {
               <div className="bg-slate-800/50 rounded-lg p-4">
                 <h4 className="text-lg font-bold text-slate-200 mb-3">技術說明</h4>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  {authSteps[currentStep]?.details}
+                  {authSteps[currentStep]?.details.split('\n').map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < authSteps[currentStep]?.details.split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
                 </p>
               </div>
             </motion.div>
