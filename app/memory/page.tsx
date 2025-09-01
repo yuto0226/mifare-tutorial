@@ -1393,8 +1393,8 @@ const BlockStructureDetails = ({
                     </div>
                     
                     {/* 精確的位元級分析 */}
-                    <div className="mt-2 p-2 bg-slate-900/50 rounded border border-cyan-600">
-                      <div className="text-cyan-300 text-xs font-semibold mb-2">🔬 精確位元分析</div>
+                    <div className="mt-2 p-2 bg-slate-900/50 rounded border border-slate-600">
+                      <div className="text-slate-300 text-xs font-semibold mb-2">🔬 精確位元分析</div>
                       {(() => {
                         const bitAnalysis = parseAccessBitsByBlock(selectedTrailerInfo.accessBits || '');
                         return (
@@ -1408,7 +1408,7 @@ const BlockStructureDetails = ({
                                     <div className="text-slate-300 font-semibold">
                                       {blockNum === 3 ? '尾塊' : `區塊${blockNum}`}
                                     </div>
-                                    <div className="text-cyan-400 font-mono">
+                                    <div className={`${accessInfo.color} font-mono`}>
                                       {blockData.bits.c1}{blockData.bits.c2}{blockData.bits.c3}
                                     </div>
                                     <div className="text-slate-400">
@@ -1783,18 +1783,18 @@ export default function MemoryPage() {
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col overflow-hidden">
-      <div className="container mx-auto px-4 py-4 flex flex-col flex-1 min-h-0">
+      <div className="container mx-auto px-4 py-8 flex flex-col flex-1 min-h-0">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center mb-4"
+          className="flex items-center mb-8"
         >
           <div className="flex items-center gap-3">
             <Link href="/" className="text-purple-400 hover:text-purple-300 transition-colors">
-              <ArrowLeft size={20} />
+              <ArrowLeft size={24} />
             </Link>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               Mifare Classic 記憶體分布
             </h1>
           </div>
