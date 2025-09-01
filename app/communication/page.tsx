@@ -2,89 +2,91 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Play, Pause, RotateCcw, ChevronRight } from "lucide-react";
+import { ArrowLeft, Play, Pause, RotateCcw } from "lucide-react";
 import Link from "next/link";
 
 interface Step {
   id: number;
   title: string;
   description: string;
-  readerAction: string;
-  cardAction: string;
   data?: string;
+  dataDirection: 'reader-to-card' | 'card-to-reader' | 'both' | 'none';
+  details: string;
 }
 
 const communicationSteps: Step[] = [
   {
     id: 1,
     title: "RF 場域建立",
-    description: "讀卡機開啟 13.56 MHz 的射頻場域，為卡片提供電力",
-    readerAction: "發送載波信號",
-    cardAction: "接收電力並啟動",
+    description: "讀卡機建立 13.56 MHz 載波信號，為無源卡片提供電力",
+    dataDirection: 'none',
+    details: "讀卡機的 RF 發射器產生連續的 13.56 MHz 載波信號。卡片內的 LC 共振電路在此頻率下達到最佳能量傳輸效率，為卡片提供足夠的工作電壓（通常 3.3V）。",
   },
   {
     id: 2,
-    title: "REQA 請求",
-    description: "讀卡機發送 REQA 命令，詢問是否有卡片存在",
-    readerAction: "發送 REQA (0x26)",
-    cardAction: "等待命令",
-    data: "0x26",
+    title: "REQA 廣播",
+    description: "讀卡機廣播 REQA 命令，尋找場域內的 Type A 卡片",
+    data: "REQA: 0x26",
+    dataDirection: 'reader-to-card',
+    details: "REQA (REQuest Type A) 是 ISO 14443-3 定義的喚醒命令。使用 Modified Miller 編碼，不含 CRC。只有處於 IDLE 狀態的 Type A 卡片會回應此命令。",
   },
   {
     id: 3,
     title: "ATQA 回應",
-    description: "卡片回應 ATQA，告知讀卡機其存在及基本資訊",
-    readerAction: "等待回應",
-    cardAction: "發送 ATQA",
-    data: "0x0004",
+    description: "卡片回應 ATQA，告知讀卡機自身的基本特性",
+    data: "ATQA: 0x0004",
+    dataDirection: 'card-to-reader',
+    details: "ATQA (Answer To request Type A) 包含 UID 長度、Bit Frame Anticollision 支援等資訊。0x0004 表示 4-byte UID 且支援 ISO 14443-4 相容性。使用 Manchester 編碼傳輸。",
   },
   {
     id: 4,
-    title: "防碰撞程序",
-    description: "進行防碰撞程序，確保只與一張卡片通訊",
-    readerAction: "發送 SEL_CL1",
-    cardAction: "參與防碰撞",
-    data: "0x93 0x20",
+    title: "防碰撞初始化",
+    description: "讀卡機啟動防碰撞程序，準備處理多卡片環境",
+    data: "SELECT: 0x93 0x20",
+    dataDirection: 'reader-to-card',
+    details: "SELECT 命令啟動 Cascade Level 1 的防碰撞程序。0x93 表示 CL1，0x20 表示 NVB (Number of Valid Bits) = 2 bytes，即完整的 SELECT 命令。",
   },
   {
     id: 5,
-    title: "UID 交換",
-    description: "卡片傳送其唯一識別碼 (UID)",
-    readerAction: "接收 UID",
-    cardAction: "發送 UID",
-    data: "0x12345678",
+    title: "UID 傳輸與碰撞檢測",
+    description: "所有卡片同時傳送 UID，讀卡機檢測並解決碰撞",
+    data: "UID: 4 bytes + BCC",
+    dataDirection: 'card-to-reader',
+    details: "多張卡片同時回應時，在 UID 不同的位置會產生碰撞。讀卡機檢測到碰撞後，會指定該位的值 (0 或 1)，只有符合的卡片繼續回應，實現 O(n) 複雜度的卡片分離。",
   },
   {
     id: 6,
     title: "卡片選取",
-    description: "讀卡機選取特定卡片進行後續通訊",
-    readerAction: "發送 SELECT",
-    cardAction: "確認選取",
-    data: "0x93 0x70 + UID",
+    description: "讀卡機選取特定卡片，建立獨占通訊",
+    data: "SELECT: 0x93 0x70 + UID + CRC",
+    dataDirection: 'reader-to-card',
+    details: "SELECT 命令包含 NVB=0x70 (表示傳送完整 UID)、4-byte UID 和 2-byte CRC-A。只有 UID 完全匹配且 CRC 正確的卡片會進入 ACTIVE 狀態並回應。",
   },
   {
     id: 7,
-    title: "SAK 回應",
-    description: "卡片發送 SAK (Select Acknowledge)，確認選取成功",
-    readerAction: "等待確認",
-    cardAction: "發送 SAK",
-    data: "0x08",
+    title: "SAK 確認",
+    description: "被選中的卡片回應 SAK，確認選取完成並報告能力",
+    data: "SAK: 0x08",
+    dataDirection: 'card-to-reader',
+    details: "SAK (Select AcKnowledge) bit 3 設為 1 表示 ISO 14443-4 不相容（Mifare Classic）。0x08 specifically 表示 Mifare Classic 1K。卡片現在處於 ACTIVE 狀態，可接受 Mifare 特定命令。",
   },
 ];
 
 export default function CommunicationPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isPlaying && currentStep < communicationSteps.length - 1) {
+    if (isPlaying) {
       interval = setInterval(() => {
-        setCurrentStep((prev) => prev + 1);
+        setCurrentStep((prev) => {
+          if (prev >= communicationSteps.length - 1) {
+            return 0; // 回到第一步，實現循環
+          }
+          return prev + 1;
+        });
       }, 3000);
-    } else if (currentStep >= communicationSteps.length - 1) {
-      setIsPlaying(false);
     }
     return () => clearInterval(interval);
   }, [isPlaying, currentStep]);
@@ -147,113 +149,184 @@ export default function CommunicationPage() {
               animate={{ opacity: 1 }}
               className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 mb-6"
             >
-              <div className="flex items-center justify-between mb-8">
-                <div className="text-center">
-                  <div className="w-24 h-32 bg-gradient-to-b from-blue-500 to-blue-700 rounded-lg mb-4 mx-auto shadow-lg">
-                    <div className="w-full h-full flex items-center justify-center text-white font-bold">
-                      讀卡機
-                    </div>
-                  </div>
-                  <p className="text-sm text-slate-400">Reader</p>
-                </div>
-
-                {/* 通訊動畫區域 */}
-                <div className="flex-1 mx-8 relative">
-                  <div className="h-px bg-slate-600 w-full"></div>
-                  
-                  {/* 數據傳輸動畫 */}
-                  <AnimatePresence>
-                    {currentStep < communicationSteps.length && (
-                      <motion.div
-                        key={`step-${currentStep}`}
-                        initial={{ x: -50, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: 50, opacity: 0 }}
-                        className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded text-sm whitespace-nowrap"
-                      >
-                        {communicationSteps[currentStep]?.data || "通訊中..."}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-blue-500"></div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* RF 場域指示 */}
-                  <motion.div
-                    animate={{
-                      opacity: currentStep >= 0 ? [0.3, 0.7, 0.3] : 0,
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    className="absolute -top-12 -bottom-12 left-0 right-0 border-2 border-dashed border-yellow-400 rounded-lg"
-                  >
-                    <span className="absolute -top-6 left-2 text-yellow-400 text-xs">
-                      RF Field (13.56 MHz)
-                    </span>
-                  </motion.div>
-                </div>
-
-                <div className="text-center">
-                  <div className="w-20 h-28 bg-gradient-to-b from-purple-500 to-purple-700 rounded-lg mb-4 mx-auto shadow-lg">
-                    <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm">
-                      Mifare
-                    </div>
-                  </div>
-                  <p className="text-sm text-slate-400">Card</p>
-                </div>
-              </div>
-
-              {/* 當前步驟資訊 */}
-              <div className="text-center">
+              {/* 當前步驟標題 */}
+              <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold mb-2">
                   步驟 {currentStep + 1}: {communicationSteps[currentStep]?.title}
                 </h3>
-                <p className="text-slate-300 mb-4">
+                <p className="text-slate-300 mb-6">
                   {communicationSteps[currentStep]?.description}
                 </p>
-                
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="bg-blue-900/30 p-4 rounded-lg">
-                    <h4 className="font-bold text-blue-400 mb-2">讀卡機動作</h4>
-                    <p className="text-sm">{communicationSteps[currentStep]?.readerAction}</p>
+              </div>
+
+              {/* 統一的通訊動畫區域 */}
+              <div className="bg-slate-900/50 border border-slate-600/30 rounded-lg p-8 mb-6">
+                <div className="flex items-center justify-between mb-8">
+                  {/* 讀卡機 */}
+                  <div className="text-center">
+                    <motion.div 
+                      animate={{
+                        scale: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? [1, 1.1, 1] : 1,
+                        boxShadow: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? 
+                          ['0 0 0px rgba(59, 130, 246, 0.5)', '0 0 20px rgba(59, 130, 246, 0.8)', '0 0 0px rgba(59, 130, 246, 0.5)'] : 
+                          '0 0 0px rgba(59, 130, 246, 0.5)'
+                      }}
+                      transition={{ duration: 1, repeat: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? Infinity : 0 }}
+                      className="w-24 h-32 bg-gradient-to-b from-blue-500 to-blue-700 rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center"
+                    >
+                      <span className="text-white text-2xl">📡</span>
+                    </motion.div>
+                    <p className="text-sm text-slate-400">讀卡機 (Reader)</p>
                   </div>
-                  <div className="bg-purple-900/30 p-4 rounded-lg">
-                    <h4 className="font-bold text-purple-400 mb-2">卡片動作</h4>
-                    <p className="text-sm">{communicationSteps[currentStep]?.cardAction}</p>
+
+                  {/* 資料傳輸動畫區域 */}
+                  <div className="flex-1 mx-8 relative h-20 flex items-center">
+                    {/* RF 場域背景 */}
+                    <motion.div
+                      animate={{
+                        opacity: communicationSteps[currentStep]?.dataDirection === 'none' ? [0.3, 0.7, 0.3] : 0.2,
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: communicationSteps[currentStep]?.dataDirection === 'none' ? Infinity : 0,
+                        ease: "easeInOut",
+                      }}
+                      className="absolute inset-0 border-2 border-dashed border-yellow-400 rounded-lg"
+                    >
+                      <span className="absolute -top-6 left-2 text-yellow-400 text-xs">
+                        RF Field (13.56 MHz)
+                      </span>
+                    </motion.div>
+                    
+                    {/* 資料封包動畫 */}
+                    <AnimatePresence>
+                      {communicationSteps[currentStep]?.data && communicationSteps[currentStep]?.dataDirection !== 'none' && (
+                        <motion.div
+                          key={`data-${currentStep}`}
+                          initial={{ 
+                            x: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? -120 : 120,
+                            opacity: 0 
+                          }}
+                          animate={{ 
+                            x: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? 120 : -120,
+                            opacity: [0, 1, 1, 0] 
+                          }}
+                          transition={{ 
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                          className="absolute bg-blue-500 text-white px-3 py-1 rounded text-sm font-mono whitespace-nowrap top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                        >
+                          {communicationSteps[currentStep]?.data}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    
+                    {/* 方向箭頭 */}
+                    <div className="absolute inset-0 flex items-center justify-center z-0">
+                      <motion.div
+                        animate={{
+                          opacity: communicationSteps[currentStep]?.dataDirection === 'none' ? [0.3, 1, 0.3] : [0.5, 1, 0.5],
+                        }}
+                        transition={{
+                          duration: communicationSteps[currentStep]?.dataDirection === 'none' ? 1.5 : 1,
+                          repeat: Infinity,
+                        }}
+                        className="text-3xl text-white"
+                      >
+                        {communicationSteps[currentStep]?.dataDirection === 'reader-to-card' && '→'}
+                        {communicationSteps[currentStep]?.dataDirection === 'card-to-reader' && '←'}
+                        {communicationSteps[currentStep]?.dataDirection === 'both' && '↔'}
+                        {communicationSteps[currentStep]?.dataDirection === 'none' && '⚡'}
+                      </motion.div>
+                    </div>
+                    
+                    {/* 資料封包動畫 */}
+                    <AnimatePresence>
+                      {communicationSteps[currentStep]?.data && communicationSteps[currentStep]?.dataDirection !== 'none' && (
+                        <motion.div
+                          key={`data-${currentStep}`}
+                          initial={{ 
+                            x: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? -120 : 120,
+                            opacity: 0 
+                          }}
+                          animate={{ 
+                            x: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? 120 : -120,
+                            opacity: [0, 1, 1, 1, 0] 
+                          }}
+                          transition={{ 
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            times: [0, 0.2, 0.8, 0.9, 1]
+                          }}
+                          className="absolute bg-blue-500 text-white px-3 py-1 rounded text-sm font-mono whitespace-nowrap top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10"
+                        >
+                          {communicationSteps[currentStep]?.data}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* 卡片 */}
+                  <div className="text-center">
+                    <motion.div 
+                      animate={{
+                        scale: communicationSteps[currentStep]?.dataDirection === 'card-to-reader' ? [1, 1.1, 1] : 1,
+                        boxShadow: communicationSteps[currentStep]?.dataDirection === 'card-to-reader' ? 
+                          ['0 0 0px rgba(147, 51, 234, 0.5)', '0 0 20px rgba(147, 51, 234, 0.8)', '0 0 0px rgba(147, 51, 234, 0.5)'] : 
+                          '0 0 0px rgba(147, 51, 234, 0.5)'
+                      }}
+                      transition={{ duration: 1, repeat: communicationSteps[currentStep]?.dataDirection === 'card-to-reader' ? Infinity : 0 }}
+                      className="w-20 h-28 bg-gradient-to-b from-purple-500 to-purple-700 rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center"
+                    >
+                      <span className="text-white text-2xl">💳</span>
+                    </motion.div>
+                    <p className="text-sm text-slate-400">卡片 (Mifare)</p>
+                  </div>
+                </div>
+
+                {/* 流向與資料說明 */}
+                <div className="text-center">
+                  <div className="inline-flex items-center gap-3 bg-slate-800/50 rounded-lg px-4 py-2">
+                    <span className="text-slate-400 text-sm">資料流向：</span>
+                    <span className="text-yellow-400 font-mono font-bold">
+                      {communicationSteps[currentStep]?.dataDirection === 'reader-to-card' && '📡 讀卡機 → 卡片 💳'}
+                      {communicationSteps[currentStep]?.dataDirection === 'card-to-reader' && '💳 卡片 → 讀卡機 📡'}
+                      {communicationSteps[currentStep]?.dataDirection === 'both' && '📡 ↔ 💳 雙向通訊'}
+                      {communicationSteps[currentStep]?.dataDirection === 'none' && '⚡ 電力場域建立'}
+                    </span>
+                    {communicationSteps[currentStep]?.data && (
+                      <>
+                        <span className="text-slate-400 text-sm">資料：</span>
+                        <span className="text-blue-400 font-mono font-bold">
+                          {communicationSteps[currentStep]?.data}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
-            </motion.div>
 
-            {/* 進度條 */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-slate-400">進度</span>
-                <span className="text-sm text-slate-400">
-                  {currentStep + 1} / {communicationSteps.length}
-                </span>
+              {/* 技術說明 */}
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <h4 className="text-lg font-bold text-slate-200 mb-3">技術說明</h4>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  {communicationSteps[currentStep]?.details}
+                </p>
               </div>
-              <div className="w-full bg-slate-700 rounded-full h-2">
-                <motion.div
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${((currentStep + 1) / communicationSteps.length) * 100}%` }}
-                  transition={{ duration: 0.5 }}
-                />
-              </div>
-            </div>
+            </motion.div>
           </div>
 
-          {/* 側邊欄 - 步驟列表 */}
+          {/* 側邊欄 - 簡化進度 */}
           <div className="space-y-4">
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <ChevronRight size={20} />
-                通訊步驟
+            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4">
+              <h3 className="font-bold text-slate-200 mb-4 flex items-center gap-2">
+                📋 步驟進度
               </h3>
-              <div className="space-y-2">
+              
+              <div className="space-y-3">
                 {communicationSteps.map((step, index) => (
                   <button
                     key={step.id}
@@ -267,7 +340,7 @@ export default function CommunicationPage() {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                         index === currentStep
                           ? "bg-white text-blue-600"
                           : index < currentStep
@@ -276,55 +349,13 @@ export default function CommunicationPage() {
                       }`}>
                         {index + 1}
                       </div>
-                      <span className="font-medium">{step.title}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{step.title}</div>
+                      </div>
                     </div>
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* 技術細節 */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
-              <button
-                onClick={() => setShowDetails(!showDetails)}
-                className="flex items-center justify-between w-full text-xl font-bold mb-4"
-              >
-                技術細節
-                <motion.div
-                  animate={{ rotate: showDetails ? 90 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronRight size={20} />
-                </motion.div>
-              </button>
-              
-              <AnimatePresence>
-                {showDetails && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-4"
-                  >
-                    <div>
-                      <h4 className="font-bold text-blue-400 mb-2">頻率規格</h4>
-                      <p className="text-sm text-slate-300">13.56 MHz ± 7 kHz</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-blue-400 mb-2">調變方式</h4>
-                      <p className="text-sm text-slate-300">ASK (Amplitude Shift Keying)</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-blue-400 mb-2">資料傳輸率</h4>
-                      <p className="text-sm text-slate-300">106 kbit/s</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-blue-400 mb-2">通訊距離</h4>
-                      <p className="text-sm text-slate-300">最大 10 cm</p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
         </div>
