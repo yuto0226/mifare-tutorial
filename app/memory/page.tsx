@@ -752,7 +752,7 @@ export default function MemoryPage() {
 
         <div className="flex gap-4 flex-1 min-h-0">
           {/* Hex Editor */}
-          <div className="flex-shrink-0 flex flex-col min-h-0" style={{ width: '600px' }}>
+          <div className="flex-shrink-0 flex flex-col min-h-0" style={{ width: '700px' }}>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
