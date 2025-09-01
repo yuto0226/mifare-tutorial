@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Play, Pause, RotateCcw, ChevronRight, CreditCard, Lock } from "lucide-react";
+import { ArrowLeft, Play, Pause, RotateCcw, ChevronRight, CreditCard } from "lucide-react";
 import Link from "next/link";
 
 interface AuthStep {
@@ -100,139 +100,26 @@ const authSteps: AuthStep[] = [
   }
 ];
 
-const Crypto1Animation = ({ isActive }: { isActive: boolean }) => {
-  return (
-    <motion.div 
-      className="bg-slate-900/50 rounded-lg p-6 border border-slate-700 shadow-lg"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-    >
-      <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
-        <Lock size={20} className="text-yellow-400" />
-        Crypto1 Keystream 產生
-      </h4>
-      
-      <div className="space-y-4">
-        {/* 輸入參數 */}
-        <div className="bg-slate-800/50 rounded-lg p-4">
-          <div className="text-sm text-slate-300 mb-3">初始化參數</div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center">
-              <div className="text-xs text-slate-400 mb-1">UID</div>
-              <div className="px-2 py-1 bg-purple-600 rounded text-xs font-mono">DEADBEEF</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-slate-400 mb-1">nT</div>
-              <div className="px-2 py-1 bg-blue-600 rounded text-xs font-mono">4C983BF2</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-slate-400 mb-1">Key A</div>
-              <div className="px-2 py-1 bg-green-600 rounded text-xs font-mono">FFFFFFFFFFFF</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Keystream 產生過程 */}
-        <div className="bg-slate-800/50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-slate-300">Keystream 輸出</span>
-            <motion.div
-              animate={{ rotate: isActive ? 360 : 0 }}
-              transition={{ duration: 2, repeat: isActive ? Infinity : 0 }}
-              className="w-6 h-6 border-2 border-yellow-400 rounded-full border-dashed"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 w-12">Byte {i}:</span>
-                <motion.div
-                  className="px-2 py-1 bg-yellow-600 rounded text-xs font-mono"
-                  animate={{
-                    opacity: isActive ? [0.5, 1, 0.5] : 0.7,
-                    scale: isActive ? [1, 1.05, 1] : 1
-                  }}
-                  transition={{
-                    duration: 1,
-                    delay: i * 0.2,
-                    repeat: isActive ? Infinity : 0,
-                  }}
-                >
-                  {isActive ? 
-                    Math.floor(Math.random() * 0xFF).toString(16).padStart(2, '0').toUpperCase() : 
-                    '??'
-                  }
-                </motion.div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="text-xs text-slate-400 mt-3">
-            每個 bit 傳輸後 LFSR 狀態更新，產生新的 keystream
-          </div>
-        </div>
-
-        {/* 加密說明 */}
-        <div className="bg-slate-800/50 rounded-lg p-4">
-          <div className="text-sm text-slate-300 mb-2">串流加密原理</div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="px-2 py-1 bg-blue-600 rounded font-mono">明文</div>
-            <span className="text-slate-400">⊕</span>
-            <div className="px-2 py-1 bg-yellow-600 rounded font-mono">Keystream</div>
-            <span className="text-slate-400">=</span>
-            <div className="px-2 py-1 bg-red-600 rounded font-mono">密文</div>
-          </div>
-          <div className="text-xs text-slate-400 mt-2">
-            每個 bit 都與對應的 keystream bit 進行 XOR 運算
-          </div>
-        </div>
-
-        {/* 攻擊弱點指示 */}
-        <motion.div 
-          className="bg-red-900/20 border border-red-500/30 rounded-lg p-3"
-          animate={{
-            borderColor: isActive ? ["#dc2626", "#ef4444", "#dc2626"] : "#dc2626"
-          }}
-          transition={{
-            duration: 2,
-            repeat: isActive ? Infinity : 0,
-          }}
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-            <span className="text-red-400 text-sm font-medium">Keystream 可預測性</span>
-          </div>
-          <div className="text-xs text-slate-400">
-            LFSR 線性特性使得 keystream 可被分析和預測
-          </div>
-        </motion.div>
-      </div>
-    </motion.div>
-  );
-};
-
 const CardInfoStructure = ({ isActive }: { isActive: boolean }) => {
   return (
     <motion.div 
-      className="bg-slate-900/50 rounded-lg p-6 border border-slate-700 shadow-lg"
+      className="bg-slate-900/50 rounded-lg p-4 border border-slate-700 shadow-lg"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.6 }}
     >
-      <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
-        <CreditCard size={20} className="text-blue-400" />
+      <h4 className="text-lg font-bold mb-3 flex items-center gap-2">
+        <CreditCard size={18} className="text-blue-400" />
         卡片資訊結構
       </h4>
       
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* UID 資訊 */}
-        <div className="bg-slate-800/50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-slate-800/50 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-300">卡片唯一識別碼</span>
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span className="text-xs text-slate-300">卡片唯一識別碼</span>
+              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
             </div>
             <motion.div
               animate={{
@@ -243,28 +130,28 @@ const CardInfoStructure = ({ isActive }: { isActive: boolean }) => {
                 duration: 2,
                 repeat: isActive ? Infinity : 0
               }}
-              className="px-3 py-1 bg-purple-600 rounded font-mono text-sm"
+              className="px-2 py-1 bg-purple-600 rounded font-mono text-xs"
             >
               DEADBEEF
             </motion.div>
           </div>
           
-          <div className="grid grid-cols-4 gap-2 text-xs">
+          <div className="grid grid-cols-4 gap-1 text-xs">
             <div className="text-center">
-              <div className="text-slate-400 mb-1">Byte 0</div>
-              <div className="px-2 py-1 bg-purple-500/30 rounded font-mono">DE</div>
+              <div className="text-slate-400 mb-1 text-xs">Byte 0</div>
+              <div className="px-1 py-1 bg-purple-500/30 rounded font-mono text-xs">DE</div>
             </div>
             <div className="text-center">
-              <div className="text-slate-400 mb-1">Byte 1</div>
-              <div className="px-2 py-1 bg-purple-500/30 rounded font-mono">AD</div>
+              <div className="text-slate-400 mb-1 text-xs">Byte 1</div>
+              <div className="px-1 py-1 bg-purple-500/30 rounded font-mono text-xs">AD</div>
             </div>
             <div className="text-center">
-              <div className="text-slate-400 mb-1">Byte 2</div>
-              <div className="px-2 py-1 bg-purple-500/30 rounded font-mono">BE</div>
+              <div className="text-slate-400 mb-1 text-xs">Byte 2</div>
+              <div className="px-1 py-1 bg-purple-500/30 rounded font-mono text-xs">BE</div>
             </div>
             <div className="text-center">
-              <div className="text-slate-400 mb-1">Byte 3</div>
-              <div className="px-2 py-1 bg-purple-500/30 rounded font-mono">EF</div>
+              <div className="text-slate-400 mb-1 text-xs">Byte 3</div>
+              <div className="px-1 py-1 bg-purple-500/30 rounded font-mono text-xs">EF</div>
             </div>
           </div>
           
@@ -274,11 +161,11 @@ const CardInfoStructure = ({ isActive }: { isActive: boolean }) => {
         </div>
 
         {/* Key A 結構 */}
-        <div className="bg-slate-800/50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-slate-800/50 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-300">Key A (讀取金鑰)</span>
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-xs text-slate-300">Key A (讀取金鑰)</span>
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
             </div>
             <motion.div
               animate={{
@@ -290,7 +177,7 @@ const CardInfoStructure = ({ isActive }: { isActive: boolean }) => {
                 delay: 0.3,
                 repeat: isActive ? Infinity : 0
               }}
-              className="px-3 py-1 bg-green-600 rounded font-mono text-sm"
+              className="px-2 py-1 bg-green-600 rounded font-mono text-xs"
             >
               FFFFFFFFFFFF
             </motion.div>
@@ -299,23 +186,23 @@ const CardInfoStructure = ({ isActive }: { isActive: boolean }) => {
           <div className="grid grid-cols-6 gap-1 text-xs">
             {['FF', 'FF', 'FF', 'FF', 'FF', 'FF'].map((byte, i) => (
               <div key={i} className="text-center">
-                <div className="text-slate-400 mb-1">B{i}</div>
-                <div className="px-1 py-1 bg-green-500/30 rounded font-mono">{byte}</div>
+                <div className="text-slate-400 mb-1 text-xs">B{i}</div>
+                <div className="px-1 py-1 bg-green-500/30 rounded font-mono text-xs">{byte}</div>
               </div>
             ))}
           </div>
           
           <div className="text-xs text-slate-400 mt-2">
-            48-bit 讀取權限金鑰（預設金鑰：全 F）
+            48-bit 讀取權限金鑰 - 用於讀取數據塊、進行認證
           </div>
         </div>
 
         {/* Key B 結構 */}
-        <div className="bg-slate-800/50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-slate-800/50 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-300">Key B (寫入金鑰)</span>
-              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <span className="text-xs text-slate-300">Key B (寫入金鑰)</span>
+              <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
             </div>
             <motion.div
               animate={{
@@ -327,7 +214,7 @@ const CardInfoStructure = ({ isActive }: { isActive: boolean }) => {
                 delay: 0.6,
                 repeat: isActive ? Infinity : 0
               }}
-              className="px-3 py-1 bg-orange-600 rounded font-mono text-sm"
+              className="px-2 py-1 bg-orange-600 rounded font-mono text-xs"
             >
               FFFFFFFFFFFF
             </motion.div>
@@ -336,36 +223,20 @@ const CardInfoStructure = ({ isActive }: { isActive: boolean }) => {
           <div className="grid grid-cols-6 gap-1 text-xs">
             {['FF', 'FF', 'FF', 'FF', 'FF', 'FF'].map((byte, i) => (
               <div key={i} className="text-center">
-                <div className="text-slate-400 mb-1">B{i}</div>
-                <div className="px-1 py-1 bg-orange-500/30 rounded font-mono">{byte}</div>
+                <div className="text-slate-400 mb-1 text-xs">B{i}</div>
+                <div className="px-1 py-1 bg-orange-500/30 rounded font-mono text-xs">{byte}</div>
               </div>
             ))}
           </div>
           
           <div className="text-xs text-slate-400 mt-2">
-            48-bit 寫入權限金鑰（通常隱藏不可讀取）
+            48-bit 寫入權限金鑰 - 用於寫入數據塊、修改存取條件（通常隱藏不可讀取）
           </div>
         </div>
 
-        {/* 權限說明 */}
-        <div className="bg-slate-800/50 rounded-lg p-4">
-          <div className="text-sm text-slate-300 mb-3">存取權限模式</div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 text-xs">
-              <div className="w-3 h-3 bg-green-500 rounded"></div>
-              <span className="text-slate-300">Key A:</span>
-              <span className="text-slate-400">讀取數據塊、進行認證</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs">
-              <div className="w-3 h-3 bg-orange-500 rounded"></div>
-              <span className="text-slate-300">Key B:</span>
-              <span className="text-slate-400">寫入數據塊、修改存取條件</span>
-            </div>
-          </div>
-          
-          <div className="text-xs text-slate-400 mt-3 p-2 bg-slate-700/50 rounded">
+        {/* 扇區權限說明 */}
+        <div className="bg-slate-800/50 rounded-lg p-3 text-xs text-slate-400">
             每個扇區都有獨立的 Key A/B 配對，提供不同層級的存取控制
-          </div>
         </div>
       </div>
     </motion.div>
@@ -613,25 +484,22 @@ export default function AuthenticationPage() {
                 </p>
               </div>
             </motion.div>
-
-            {/* Crypto-1 演算法視覺化 */}
-            <Crypto1Animation isActive={isPlaying && currentStep >= 2} />
           </div>
 
           {/* 側邊欄 */}
-          <div className="space-y-4">
-            {/* 驗證步驟列表 */}
+          <div className="space-y-4 max-h-[calc(100vh-12rem)] flex flex-col">
+            {/* 驗證步驟列表 - 擴展更多空間 */}
             <motion.div 
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 shadow-lg"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 shadow-lg flex-1 flex flex-col min-h-0"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2 flex-shrink-0">
                 <ChevronRight size={20} />
                 驗證步驟
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin">
                 {authSteps.map((step, index) => (
                   <motion.button
                     key={step.id}
@@ -665,8 +533,10 @@ export default function AuthenticationPage() {
               </div>
             </motion.div>
 
-            {/* 金鑰結構視覺化 */}
-            <CardInfoStructure isActive={isPlaying && currentStep >= 5} />
+            {/* 卡片資訊結構 - 移到下方 */}
+            <div className="flex-shrink-0">
+              <CardInfoStructure isActive={isPlaying && currentStep >= 5} />
+            </div>
           </div>
         </div>
       </div>
