@@ -15,7 +15,104 @@ interface MemoryBlock {
   keyA?: string;
   keyB?: string;
   accessBits?: string;
+  valueInfo?: {
+    value: number;
+    valueInverted: number;
+    valueBackup: number;
+    addr: number;
+    addrInverted: number;
+    addrBackup: number;
+    addrInvertedBackup: number;
+    isValid: boolean;
+    validationErrors: {
+      valueInverted: boolean;
+      valueBackup: boolean;
+      addrInverted: boolean;
+      addrBackup: boolean;
+    };
+  };
 }
+
+// 解析 Value Block 格式
+const parseValueBlock = (data: string) => {
+  if (data.length !== 32) return null;
+  
+  // 將十六進制字符串轉換為字節數組
+  const bytes = data.match(/.{2}/g)?.map(hex => parseInt(hex, 16)) || [];
+  if (bytes.length !== 16) return null;
+  
+  // 讀取 4 字節的值 (Little Endian) - 確保使用無符號 32 位元
+  const value = ((bytes[0] + (bytes[1] << 8) + (bytes[2] << 16) + (bytes[3] << 24)) >>> 0);
+  const valueInverted = ((bytes[4] + (bytes[5] << 8) + (bytes[6] << 16) + (bytes[7] << 24)) >>> 0);
+  const valueBackup = ((bytes[8] + (bytes[9] << 8) + (bytes[10] << 16) + (bytes[11] << 24)) >>> 0);
+  
+  // 讀取地址字節
+  const addr = bytes[12];
+  const addrInverted = bytes[13];
+  const addrBackup = bytes[14];
+  const addrInvertedBackup = bytes[15];
+  
+  // 驗證格式 - 使用無符號 32 位元運算
+  const valueValid = ((value ^ valueInverted) >>> 0) === 0xFFFFFFFF;
+  const valueBackupValid = value === valueBackup;
+  const addrValid = (addr ^ addrInverted) === 0xFF;
+  const addrBackupValid = addr === addrBackup && addrInverted === addrInvertedBackup;
+  
+  return {
+    value,
+    valueInverted,
+    valueBackup,
+    addr,
+    addrInverted,
+    addrBackup,
+    addrInvertedBackup,
+    isValid: valueValid && valueBackupValid && addrValid && addrBackupValid,
+    validationErrors: {
+      valueInverted: !valueValid,
+      valueBackup: !valueBackupValid,
+      addrInverted: !addrValid,
+      addrBackup: !addrBackupValid
+    }
+  };
+};
+
+// 建立 Value Block 格式的十六進制字串
+const createValueBlock = (value: number, address: number = 0x06) => {
+  // 確保值在 32 位元範圍內，使用無符號運算
+  const val = (value >>> 0);
+  const valInverted = ((~val) >>> 0);
+  const addr = address & 0xFF;
+  const addrInverted = (~addr) & 0xFF;
+  
+  // 將 32 位元值轉換為 Little Endian 格式的 4 個位元組
+  const valueBytes = [
+    val & 0xFF,
+    (val >> 8) & 0xFF,
+    (val >> 16) & 0xFF,
+    (val >> 24) & 0xFF
+  ];
+  
+  const valueInvertedBytes = [
+    valInverted & 0xFF,
+    (valInverted >> 8) & 0xFF,
+    (valInverted >> 16) & 0xFF,
+    (valInverted >> 24) & 0xFF
+  ];
+  
+  // 組合成完整的 16 位元組格式
+  const blockData = [
+    ...valueBytes,        // 0-3: 值
+    ...valueInvertedBytes, // 4-7: 值的反轉
+    ...valueBytes,        // 8-11: 值的備份
+    addr,                 // 12: 地址
+    addrInverted,         // 13: 地址的反轉
+    addr,                 // 14: 地址的備份
+    addrInverted          // 15: 地址反轉的備份
+  ];
+  
+  // 轉換為十六進制字串
+  return blockData.map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+};
 
 // 模擬 Mifare Classic 1K 的記憶體佈局
 const memoryData: MemoryBlock[] = [
@@ -59,12 +156,16 @@ const memoryData: MemoryBlock[] = [
     type: 'data',
     description: "資料區塊：應用程式自定義資料"
   },
-  {
-    block: 5, sector: 1, address: 0x05,
-    data: "64009B9B64009B9B06000000F60F0000",
-    type: 'value',
-    description: "值區塊：用於儲存數值，包含值、反轉值和備份"
-  },
+  (() => {
+    const valueData = createValueBlock(100, 0x05);
+    return {
+      block: 5, sector: 1, address: 0x05,
+      data: valueData,
+      type: 'value' as const,
+      description: "值區塊：儲存餘額 100 元",
+      valueInfo: parseValueBlock(valueData) || undefined
+    };
+  })(),
   {
     block: 6, sector: 1, address: 0x06,
     data: "ABCDEFABCDEFABCDEFABCDEFABCDEFAB",
@@ -81,7 +182,7 @@ const memoryData: MemoryBlock[] = [
     accessBits: "078069"
   },
   // 其他扇區 (簡化版本)
-  ...Array.from({ length: 56 }, (_, i) => ({
+  ...Array.from({ length: 52 }, (_, i) => ({
     block: i + 8,
     sector: Math.floor((i + 8) / 4),
     address: i + 8,
@@ -93,7 +194,36 @@ const memoryData: MemoryBlock[] = [
       keyB: "FFFFFFFFFFFF", 
       accessBits: "078069"
     })
-  }))
+  })),
+  // 在扇區 15 加入另一個值區塊示例
+  (() => {
+    const valueData = createValueBlock(1500, 0x3C);
+    return {
+      block: 60, sector: 15, address: 0x3C,
+      data: valueData,
+      type: 'value' as const,
+      description: "值區塊：儲存點數 1500 點",
+      valueInfo: parseValueBlock(valueData) || undefined
+    };
+  })(),
+  // 其餘的尾塊和資料塊
+  ...Array.from({ length: 3 }, (_, i) => {
+    const blockNum = 61 + i;
+    const isTrailer = blockNum === 63;
+    return {
+      block: blockNum,
+      sector: 15,
+      address: blockNum,
+      data: isTrailer ? "FFFFFFFFFFFF078069FFFFFFFFFFFF" : "00000000000000000000000000000000",
+      type: (isTrailer ? 'trailer' : 'data') as 'trailer' | 'data',
+      description: isTrailer ? "扇區尾塊" : "資料區塊",
+      ...(isTrailer && {
+        keyA: "FFFFFFFFFFFF",
+        keyB: "FFFFFFFFFFFF", 
+        accessBits: "078069"
+      })
+    };
+  })
 ];
 
 type HighlightType = 'uid' | 'bcc' | 'sak' | 'atqa' | 'manufacturer_data' | 'key_a' | 'access_bits' | 'key_b' | 'value' | 'value_inverted' | 'address_backup' | 'normal';
@@ -184,49 +314,6 @@ const getDataGroupRange = (block: MemoryBlock, byteIndex: number): { start: numb
   }
   
   return { start: 0, end: 15, type: 'normal' };
-};
-
-// 解析 Value Block 格式
-const parseValueBlock = (data: string) => {
-  if (data.length !== 32) return null;
-  
-  // 將十六進制字符串轉換為字節數組
-  const bytes = data.match(/.{2}/g)?.map(hex => parseInt(hex, 16)) || [];
-  if (bytes.length !== 16) return null;
-  
-  // 讀取 4 字節的值 (Little Endian)
-  const value = bytes[0] + (bytes[1] << 8) + (bytes[2] << 16) + (bytes[3] << 24);
-  const valueInverted = bytes[4] + (bytes[5] << 8) + (bytes[6] << 16) + (bytes[7] << 24);
-  const valueBackup = bytes[8] + (bytes[9] << 8) + (bytes[10] << 16) + (bytes[11] << 24);
-  
-  // 讀取地址字節
-  const addr = bytes[12];
-  const addrInverted = bytes[13];
-  const addrBackup = bytes[14];
-  const addrInvertedBackup = bytes[15];
-  
-  // 驗證格式
-  const valueValid = (value ^ valueInverted) === 0xFFFFFFFF;
-  const valueBackupValid = value === valueBackup;
-  const addrValid = (addr ^ addrInverted) === 0xFF;
-  const addrBackupValid = addr === addrBackup && addrInverted === addrInvertedBackup;
-  
-  return {
-    value,
-    valueInverted,
-    valueBackup,
-    addr,
-    addrInverted,
-    addrBackup,
-    addrInvertedBackup,
-    isValid: valueValid && valueBackupValid && addrValid && addrBackupValid,
-    validationErrors: {
-      valueInverted: !valueValid,
-      valueBackup: !valueBackupValid,
-      addrInverted: !addrValid,
-      addrBackup: !addrBackupValid
-    }
-  };
 };
 
 // 獲取扇區的 Trailer Block 資訊
@@ -494,7 +581,7 @@ const BlockStructureDetails = ({
         <div>
           <h4 className="font-bold text-slate-300 mb-1 text-xs">值區塊結構</h4>
           {(() => {
-            const valueInfo = parseValueBlock(block.data);
+            const valueInfo = block.valueInfo;
             if (!valueInfo) {
               return (
                 <div className="bg-red-900/30 p-2 rounded text-xs">
@@ -544,12 +631,34 @@ const BlockStructureDetails = ({
           <h4 className="font-bold text-slate-300 mb-1 text-xs">製造商資料結構</h4>
           <div className="grid grid-cols-1 gap-1 text-xs">
             <div className="bg-blue-900/30 p-2 rounded">
-              <div className="font-bold text-blue-400 mb-1">UID</div>
-              <div className="font-mono text-xs">DE AD BE EF</div>
+              <div className="font-bold text-blue-400 mb-1">UID (0-3 位元組)</div>
+              <div className="font-mono text-xs">
+                {block.data.substring(0, 8).match(/.{2}/g)?.join(' ').toUpperCase()}
+              </div>
             </div>
             <div className="bg-cyan-900/30 p-2 rounded">
-              <div className="font-bold text-cyan-400 mb-1">BCC/SAK</div>
-              <div className="font-mono text-xs">22 08</div>
+              <div className="font-bold text-cyan-400 mb-1">BCC (4 位元組)</div>
+              <div className="font-mono text-xs">
+                {block.data.substring(8, 10).toUpperCase()}
+              </div>
+            </div>
+            <div className="bg-indigo-900/30 p-2 rounded">
+              <div className="font-bold text-indigo-400 mb-1">SAK (5 位元組)</div>
+              <div className="font-mono text-xs">
+                {block.data.substring(10, 12).toUpperCase()}
+              </div>
+            </div>
+            <div className="bg-purple-900/30 p-2 rounded">
+              <div className="font-bold text-purple-400 mb-1">ATQA (6-7 位元組)</div>
+              <div className="font-mono text-xs">
+                {block.data.substring(12, 16).match(/.{2}/g)?.join(' ').toUpperCase()}
+              </div>
+            </div>
+            <div className="bg-slate-900/30 p-2 rounded">
+              <div className="font-bold text-slate-400 mb-1">製造商資料 (8-15 位元組)</div>
+              <div className="font-mono text-xs">
+                {block.data.substring(16, 32).match(/.{2}/g)?.join(' ').toUpperCase()}
+              </div>
             </div>
           </div>
         </div>
