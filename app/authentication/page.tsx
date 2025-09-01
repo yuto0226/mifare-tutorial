@@ -343,12 +343,12 @@ export default function AuthenticationPage() {
                   <div className="text-center">
                     <motion.div 
                       animate={{
-                        scale: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) ? [1, 1.1, 1] : 1,
-                        boxShadow: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) ? 
+                        scale: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? [1, 1.1, 1] : 1,
+                        boxShadow: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? 
                           ['0 0 0px rgba(34, 197, 94, 0.5)', '0 0 20px rgba(34, 197, 94, 0.8)', '0 0 0px rgba(34, 197, 94, 0.5)'] : 
                           '0 0 0px rgba(34, 197, 94, 0.5)'
                       }}
-                      transition={{ duration: 1, repeat: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) ? Infinity : 0 }}
+                      transition={{ duration: 1, repeat: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? Infinity : 0 }}
                       className="w-24 h-32 bg-gradient-to-b from-green-500 to-green-700 rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center"
                     >
                       <span className="text-white text-2xl">📡</span>
@@ -377,16 +377,16 @@ export default function AuthenticationPage() {
                     
                     {/* 資料封包動畫 */}
                     <AnimatePresence>
-                      {(authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) || 
+                      {(authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) || 
                         authSteps[currentStep]?.cardData?.match(/^(nT|aT):/)) && (
                         <motion.div
                           key={`auth-data-${currentStep}`}
                           initial={{ 
-                            x: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) ? -120 : 120,
+                            x: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? -120 : 120,
                             opacity: 0 
                           }}
                           animate={{ 
-                            x: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) ? 120 : -120,
+                            x: authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? 120 : -120,
                             opacity: [0, 1, 1, 1, 0] 
                           }}
                           transition={{ 
@@ -399,7 +399,7 @@ export default function AuthenticationPage() {
                             currentStep >= 4 ? 'bg-yellow-500 text-black' : 'bg-green-500 text-white'
                           }`}
                         >
-                          {authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) ? 
+                          {authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? 
                             authSteps[currentStep]?.readerData?.split(': ')[1] : 
                             authSteps[currentStep]?.cardData?.split(': ')[1]}
                           {currentStep >= 4 && (
@@ -427,7 +427,7 @@ export default function AuthenticationPage() {
                         }}
                         className="text-3xl text-white"
                       >
-                        {authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) ? '→' :
+                        {authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? '→' :
                          authSteps[currentStep]?.cardData?.match(/^(nT|aT):/) ? '←' : '⚙️'}
                       </motion.div>
                     </div>
@@ -456,17 +456,17 @@ export default function AuthenticationPage() {
                   <div className="inline-flex items-center gap-3 bg-slate-800/50 rounded-lg px-4 py-2">
                     <span className="text-slate-400 text-sm">資料流向：</span>
                     <span className="text-yellow-400 font-mono font-bold">
-                      {authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) && '📡 讀卡機 → 卡片 💳'}
+                      {authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) && '📡 讀卡機 → 卡片 💳'}
                       {authSteps[currentStep]?.cardData?.match(/^(nT|aT):/) && '💳 卡片 → 讀卡機 📡'}
-                      {!authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) && 
+                      {!authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) && 
                        !authSteps[currentStep]?.cardData?.match(/^(nT|aT):/) && '⚙️ 內部處理'}
                     </span>
-                    {(authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) || 
+                    {(authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) || 
                       authSteps[currentStep]?.cardData?.match(/^(nT|aT):/)) && (
                       <>
                         <span className="text-slate-400 text-sm">資料：</span>
                         <span className="text-green-400 font-mono font-bold">
-                          {authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|aT):/) ? 
+                          {authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) ? 
                             authSteps[currentStep]?.readerData : 
                             authSteps[currentStep]?.cardData}
                         </span>
@@ -474,6 +474,161 @@ export default function AuthenticationPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Crypto1 狀態轉換動畫 - 僅在內部處理步驟顯示 */}
+                {(!authSteps[currentStep]?.readerData?.match(/^(AUTH|nR|nR\+aR|aT):/) && 
+                  !authSteps[currentStep]?.cardData?.match(/^(nT|aT):/)) && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-6 bg-slate-800/30 border border-slate-600/50 rounded-lg p-6"
+                  >
+                    <div className="text-center mb-4">
+                      <h4 className="text-lg font-bold text-yellow-400 mb-2 flex items-center justify-center gap-2">
+                        🔐 Crypto1 內部狀態
+                      </h4>
+                    </div>
+
+                    {/* LFSR 狀態動畫 */}
+                    {currentStep === 2 && (
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <span className="text-sm text-slate-300">初始化 48-bit LFSR</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-1">
+                          {Array.from({length: 48}, (_, i) => (
+                            <motion.div
+                              key={i}
+                              initial={{ scale: 0, backgroundColor: "#475569" }}
+                              animate={{ 
+                                scale: [0, 1.2, 1],
+                                backgroundColor: ["#475569", "#fbbf24", "#22c55e"]
+                              }}
+                              transition={{ 
+                                delay: i * 0.02,
+                                duration: 0.5
+                              }}
+                              className="w-2 h-6 rounded-sm"
+                            />
+                          ))}
+                        </div>
+                        <div className="text-center">
+                          <motion.span 
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="text-yellow-400 font-mono text-sm"
+                          >
+                            Key ⊕ (UID:DEADBEEF ⊕ nT:4C983BF2)
+                          </motion.span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 計算動畫 */}
+                    {(currentStep === 3 || currentStep === 5 || currentStep === 6) && (
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <span className="text-sm text-slate-300">
+                            {currentStep === 3 && "產生 nR 與計算 aR"}
+                            {currentStep === 5 && "解密與驗證流程"}
+                            {currentStep === 6 && "計算 aT 認證"}
+                          </span>
+                        </div>
+                        
+                        {/* 公式動畫 */}
+                        <div className="bg-slate-900/50 rounded-lg p-4">
+                          <motion.div
+                            animate={{ opacity: [0.6, 1, 0.6] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                            className="text-center font-mono text-sm space-y-2"
+                          >
+                            {currentStep === 3 && (
+                              <>
+                                <div className="text-blue-400">nR = random(32-bit)</div>
+                                <div className="text-green-400">aR = suc2(nT) ⊕ nR</div>
+                              </>
+                            )}
+                            {currentStep === 5 && (
+                              <>
+                                <div className="text-orange-400">decrypt(nR, aR)</div>
+                                <div className="text-green-400">verify: aR == suc2(nT) ⊕ nR</div>
+                              </>
+                            )}
+                            {currentStep === 6 && (
+                              <>
+                                <div className="text-purple-400">aT = suc3(nR)</div>
+                                <div className="text-yellow-400">encrypt(aT)</div>
+                              </>
+                            )}
+                          </motion.div>
+                        </div>
+
+                        {/* LFSR 運作動畫 */}
+                        <div className="flex items-center justify-center">
+                          <motion.div
+                            animate={{ 
+                              rotate: 360,
+                              scale: [1, 1.1, 1]
+                            }}
+                            transition={{ 
+                              rotate: { duration: 3, repeat: Infinity, ease: "linear" },
+                              scale: { duration: 2, repeat: Infinity }
+                            }}
+                            className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full flex items-center justify-center"
+                          >
+                            <span className="text-yellow-400 text-xs font-bold">LFSR</span>
+                          </motion.div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 狀態同步動畫 */}
+                    {currentStep === 8 && (
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <span className="text-sm text-slate-300">建立安全通道狀態</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-center">
+                            <motion.div
+                              animate={{ 
+                                boxShadow: ['0 0 0px rgba(34, 197, 94, 0.5)', '0 0 20px rgba(34, 197, 94, 0.8)', '0 0 0px rgba(34, 197, 94, 0.5)']
+                              }}
+                              transition={{ duration: 1, repeat: Infinity }}
+                              className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mb-2"
+                            >
+                              <span className="text-white text-xs">Reader</span>
+                            </motion.div>
+                            <div className="text-green-400 text-xs font-mono">LFSR_R</div>
+                          </div>
+                          
+                          <motion.div
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                            className="flex-1 text-center"
+                          >
+                            <div className="text-yellow-400 font-mono text-sm">🔗 同步狀態 🔗</div>
+                            <div className="text-xs text-slate-400 mt-1">Crypto1 Channel Ready</div>
+                          </motion.div>
+                          
+                          <div className="text-center">
+                            <motion.div
+                              animate={{ 
+                                boxShadow: ['0 0 0px rgba(147, 51, 234, 0.5)', '0 0 20px rgba(147, 51, 234, 0.8)', '0 0 0px rgba(147, 51, 234, 0.5)']
+                              }}
+                              transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
+                              className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mb-2"
+                            >
+                              <span className="text-white text-xs">Card</span>
+                            </motion.div>
+                            <div className="text-purple-400 text-xs font-mono">LFSR_C</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
               </div>
 
               {/* 技術說明 */}
