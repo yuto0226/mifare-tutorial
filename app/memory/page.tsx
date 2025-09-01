@@ -1451,46 +1451,46 @@ const BlockStructureDetails = ({
                         blockLabel = `區塊 ${block.block}`;
                         return (
                           <div className="border border-purple-600 rounded p-2">
-                            <div className="font-semibold text-purple-300 mb-1">{blockLabel} (扇區尾塊)</div>
+                            <div className="font-semibold text-slate-300 mb-1">{blockLabel} (扇區尾塊)</div>
                             <div className="mb-2 text-xs">
-                              <span className="text-cyan-300">存取位元：</span>
-                              <span className="font-mono text-cyan-400">
-                                C1C2C3 = {currentBlockData.bits.c1}{currentBlockData.bits.c2}{currentBlockData.bits.c3} ({currentBlockData.bits.value})
+                              <span className={`text-slate-200 font-mono`}>存取位元：C1C2C3 = </span>
+                              <span className={`${accessInfo.color} font-mono`}>
+                                {currentBlockData.bits.c1}{currentBlockData.bits.c2}{currentBlockData.bits.c3} ({currentBlockData.bits.value})
                               </span>
                             </div>
                             <div className="grid grid-cols-2 gap-1 text-xs">
                               <div className="flex justify-between">
-                                <span className="text-red-300">讀金鑰A:</span>
+                                <span className="text-slate-300">讀金鑰A:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.readA === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.readA}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-red-300">寫金鑰A:</span>
+                                <span className="text-slate-300">寫金鑰A:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.writeA === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.writeA}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-yellow-300">讀存取位元:</span>
+                                <span className="text-slate-300">讀存取位元:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.readAccessBits === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.readAccessBits}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-yellow-300">寫存取位元:</span>
+                                <span className="text-slate-300">寫存取位元:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.writeAccessBits === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.writeAccessBits}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-orange-300">讀金鑰B:</span>
+                                <span className="text-slate-300">讀金鑰B:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.readB === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.readB}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-orange-300">寫金鑰B:</span>
+                                <span className="text-slate-300">寫金鑰B:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.writeB === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.writeB}
                                 </span>
@@ -1505,32 +1505,32 @@ const BlockStructureDetails = ({
                           <div className="border border-slate-600 rounded p-2">
                             <div className="font-semibold text-slate-300 mb-1">{blockLabel}</div>
                             <div className="mb-2 text-xs">
-                              <span className="text-cyan-300">存取位元：</span>
-                              <span className="font-mono text-cyan-400">
-                                C1C2C3 = {currentBlockData.bits.c1}{currentBlockData.bits.c2}{currentBlockData.bits.c3} ({currentBlockData.bits.value})
+                              <span className={`text-slate-200 font-mono`}>存取位元：C1C2C3 = </span>
+                              <span className={`${accessInfo.color} font-mono`}>
+                                {currentBlockData.bits.c1}{currentBlockData.bits.c2}{currentBlockData.bits.c3} ({currentBlockData.bits.value})
                               </span>
                             </div>
                             <div className="grid grid-cols-2 gap-1 text-xs">
                               <div className="flex justify-between">
-                                <span className="text-blue-300">讀取:</span>
+                                <span className="text-slate-300">讀取:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.read === '禁止' ? 'text-red-400' : currentBlockData.permissions.read === '公開' ? 'text-green-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.read}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-blue-300">寫入:</span>
+                                <span className="text-slate-300">寫入:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.write === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.write}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-green-300">遞增:</span>
+                                <span className="text-slate-300">遞增:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.increment === '禁止' ? 'text-red-400' : 'text-green-400'}`}>
                                   {currentBlockData.permissions.increment}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-orange-300">遞減:</span>
+                                <span className="text-slate-300">遞減:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.decrement === '禁止' ? 'text-red-400' : 'text-orange-400'}`}>
                                   {currentBlockData.permissions.decrement}
                                 </span>
@@ -1582,16 +1582,6 @@ const BlockStructureDetails = ({
                 <p>• 位元組 7: C2₃C2₂C2₁C2₀ (反向)</p>
                 <p>• 位元組 8: C3₃C3₂C3₁C3₀ (反向)</p>
                 <p>• 位元組 9: 自由運用</p>
-              </div>
-            </div>
-
-            {/* 金鑰說明 */}
-            <div className="bg-slate-800/50 p-3 rounded border border-slate-600">
-              <h5 className="font-semibold text-slate-200 mb-2">存取金鑰</h5>
-              <div className="space-y-1 text-slate-300 text-xs">
-                <div><span className="text-red-300">金鑰 A:</span> 主要驗證金鑰，通常用於一般存取</div>
-                <div><span className="text-orange-300">金鑰 B:</span> 次要驗證金鑰，可用於特殊權限或管理</div>
-                <div className="text-yellow-300 mt-2">📝 金鑰永遠無法被直接讀取，只能用於驗證</div>
               </div>
             </div>
           </div>
