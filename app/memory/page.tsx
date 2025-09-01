@@ -114,9 +114,103 @@ const createValueBlock = (value: number, address: number = 0x06) => {
   return blockData.map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
 };
 
-// 模擬 Mifare Classic 1K 的記憶體佈局
+// 根據官方規格生成正確的 C1C2C3 組合的 access bits
+const generateOfficialAccessBits = (c1c2c3: string): string => {
+  // 確保輸入是3位二進制字符串
+  if (!/^[01]{3}$/.test(c1c2c3)) {
+    throw new Error(`無效的 C1C2C3 值: ${c1c2c3}`);
+  }
+  
+  const c1 = parseInt(c1c2c3[0]);
+  const c2 = parseInt(c1c2c3[1]); 
+  const c3 = parseInt(c1c2c3[2]);
+  
+  // 計算反轉位元
+  const notC1 = 1 - c1;
+  const notC2 = 1 - c2;
+  const notC3 = 1 - c3;
+  
+  // 對於每個區塊（0,1,2,3），這裡示範所有區塊使用相同的 C1C2C3
+  // Byte 6: !C2_3,!C2_2,!C2_1,!C2_0,!C1_3,!C1_2,!C1_1,!C1_0
+  const byte6 = (notC2 << 7) | (notC2 << 6) | (notC2 << 5) | (notC2 << 4) |
+                (notC1 << 3) | (notC1 << 2) | (notC1 << 1) | (notC1 << 0);
+  
+  // Byte 7: C1_3,C1_2,C1_1,C1_0,!C3_3,!C3_2,!C3_1,!C3_0
+  const byte7 = (c1 << 7) | (c1 << 6) | (c1 << 5) | (c1 << 4) |
+                (notC3 << 3) | (notC3 << 2) | (notC3 << 1) | (notC3 << 0);
+  
+  // Byte 8: C3_3,C3_2,C3_1,C3_0,C2_3,C2_2,C2_1,C2_0  
+  const byte8 = (c3 << 7) | (c3 << 6) | (c3 << 5) | (c3 << 4) |
+                (c2 << 3) | (c2 << 2) | (c2 << 1) | (c2 << 0);
+  
+  // 轉換為十六進制字符串
+  return byte6.toString(16).padStart(2, '0').toUpperCase() +
+         byte7.toString(16).padStart(2, '0').toUpperCase() +
+         byte8.toString(16).padStart(2, '0').toUpperCase();
+};
+
+// 根據四個區塊的個別權限設定生成 access bits
+const generateAccessBitsByBlocks = (block0: number, block1: number, block2: number, block3: number): string => {
+  // 驗證輸入範圍 (0-7)
+  const blocks = [block0, block1, block2, block3];
+  for (let i = 0; i < blocks.length; i++) {
+    if (blocks[i] < 0 || blocks[i] > 7 || !Number.isInteger(blocks[i])) {
+      throw new Error(`區塊 ${i} 的權限值必須是 0-7 的整數，收到: ${blocks[i]}`);
+    }
+  }
+  
+  // 將 0-7 的值轉換為 3 位二進制 (C1C2C3)
+  const toBinary = (value: number): { c1: number, c2: number, c3: number } => {
+    return {
+      c1: (value >> 2) & 1,  // 最高位
+      c2: (value >> 1) & 1,  // 中間位
+      c3: value & 1          // 最低位
+    };
+  };
+  
+  const block0Bits = toBinary(block0);
+  const block1Bits = toBinary(block1);
+  const block2Bits = toBinary(block2);
+  const block3Bits = toBinary(block3);
+  
+  // 計算反轉位元
+  const notC1_0 = 1 - block0Bits.c1;
+  const notC1_1 = 1 - block1Bits.c1;
+  const notC1_2 = 1 - block2Bits.c1;
+  const notC1_3 = 1 - block3Bits.c1;
+  
+  const notC2_0 = 1 - block0Bits.c2;
+  const notC2_1 = 1 - block1Bits.c2;
+  const notC2_2 = 1 - block2Bits.c2;
+  const notC2_3 = 1 - block3Bits.c2;
+  
+  const notC3_0 = 1 - block0Bits.c3;
+  const notC3_1 = 1 - block1Bits.c3;
+  const notC3_2 = 1 - block2Bits.c3;
+  const notC3_3 = 1 - block3Bits.c3;
+  
+  // 根據 Mifare Classic 規格構建位元組
+  // Byte 6: !C2_3,!C2_2,!C2_1,!C2_0,!C1_3,!C1_2,!C1_1,!C1_0
+  const byte6 = (notC2_3 << 7) | (notC2_2 << 6) | (notC2_1 << 5) | (notC2_0 << 4) |
+                (notC1_3 << 3) | (notC1_2 << 2) | (notC1_1 << 1) | (notC1_0 << 0);
+  
+  // Byte 7: C1_3,C1_2,C1_1,C1_0,!C3_3,!C3_2,!C3_1,!C3_0
+  const byte7 = (block3Bits.c1 << 7) | (block2Bits.c1 << 6) | (block1Bits.c1 << 5) | (block0Bits.c1 << 4) |
+                (notC3_3 << 3) | (notC3_2 << 2) | (notC3_1 << 1) | (notC3_0 << 0);
+  
+  // Byte 8: C3_3,C3_2,C3_1,C3_0,C2_3,C2_2,C2_1,C2_0
+  const byte8 = (block3Bits.c3 << 7) | (block2Bits.c3 << 6) | (block1Bits.c3 << 5) | (block0Bits.c3 << 4) |
+                (block3Bits.c2 << 3) | (block2Bits.c2 << 2) | (block1Bits.c2 << 1) | (block0Bits.c2 << 0);
+  
+  // 轉換為十六進制字符串
+  return byte6.toString(16).padStart(2, '0').toUpperCase() +
+         byte7.toString(16).padStart(2, '0').toUpperCase() +
+         byte8.toString(16).padStart(2, '0').toUpperCase();
+};
+
+// 模擬 Mifare Classic 1K 的記憶體佈局 - 多元化存取位元配置
 const memoryData: MemoryBlock[] = [
-  // 扇區 0 - 製造商區塊
+  // 扇區 0 - 製造商區塊 (混合權限配置)
   {
     block: 0, sector: 0, address: 0x00,
     data: "deadbeef220804006263646566676869",
@@ -124,37 +218,37 @@ const memoryData: MemoryBlock[] = [
     description: "製造商區塊：包含 UID、BCC、SAK 等製造商資訊",
     keyA: "FFFFFFFFFFFF",
     keyB: "FFFFFFFFFFFF",
-    accessBits: "078069"
+    accessBits: generateAccessBitsByBlocks(4, 4, 4, 0) // 資料區塊只讀，尾塊預設
   },
   // 扇區 0 - 資料區塊
   {
     block: 1, sector: 0, address: 0x01,
     data: "00000000000000000000000000000000",
     type: 'data',
-    description: "資料區塊：用於儲存應用程式資料"
+    description: "資料區塊：只讀保護"
   },
   {
     block: 2, sector: 0, address: 0x02,
     data: "00000000000000000000000000000000",
     type: 'data',
-    description: "資料區塊：用於儲存應用程式資料"
+    description: "資料區塊：只讀保護"
   },
-  // 扇區 0 - 扇區尾塊 (預設設定)
+  // 扇區 0 - 尾塊 (混合權限：資料只讀，尾塊預設)
   {
     block: 3, sector: 0, address: 0x03,
-    data: "FFFFFFFFFFFF078069FFFFFFFFFFFF",
+    data: `FFFFFFFFFFFF${generateAccessBitsByBlocks(4, 4, 4, 0)}FFFFFFFFFFFF`,
     type: 'trailer',
-    description: "扇區尾塊：預設設定，所有區塊可讀寫",
+    description: "扇區尾塊：混合模式 - 資料區塊只讀，尾塊預設權限",
     keyA: "FFFFFFFFFFFF",
     keyB: "FFFFFFFFFFFF",
-    accessBits: "078069"
+    accessBits: generateAccessBitsByBlocks(4, 4, 4, 0)
   },
-  // 扇區 1 - 公開讀取模式
+  // 扇區 1 - 漸進式權限配置 (0→1→2→3)
   {
     block: 4, sector: 1, address: 0x04,
     data: "12345678901234567890123456789012",
     type: 'data',
-    description: "資料區塊：公開讀取，需金鑰寫入"
+    description: "資料區塊：完全開放 (000)"
   },
   (() => {
     const valueData = createValueBlock(100, 0x05);
@@ -162,7 +256,7 @@ const memoryData: MemoryBlock[] = [
       block: 5, sector: 1, address: 0x05,
       data: valueData,
       type: 'value' as const,
-      description: "值區塊：儲存餘額 100 元，增減值操作",
+      description: "值區塊：金鑰 B 控制 (001)",
       valueInfo: parseValueBlock(valueData) || undefined
     };
   })(),
@@ -170,427 +264,438 @@ const memoryData: MemoryBlock[] = [
     block: 6, sector: 1, address: 0x06,
     data: "ABCDEFABCDEFABCDEFABCDEFABCDEFAB",
     type: 'data',
-    description: "資料區塊：公開讀取，需金鑰寫入"
+    description: "資料區塊：公開讀取 (010)"
   },
   {
     block: 7, sector: 1, address: 0x07,
-    data: "A0A1A2A3A4A5787F07B0B1B2B3B4B5",
+    data: `A0A1A2A3A4A5${generateAccessBitsByBlocks(0, 1, 2, 3)}B0B1B2B3B4B5`,
     type: 'trailer',
-    description: "扇區尾塊：公開讀取模式 (存取位元: 787F07)",
+    description: "扇區尾塊：漸進式權限 - Block0(000)→Block1(001)→Block2(010)→Trailer(011)",
     keyA: "A0A1A2A3A4A5",
     keyB: "B0B1B2B3B4B5",
-    accessBits: "787F07"
+    accessBits: generateAccessBitsByBlocks(0, 1, 2, 3)
   },
-  // 扇區 2 - 只讀模式
+  // 扇區 2 - 高安全性配置 (4→5→6→7)
   {
     block: 8, sector: 2, address: 0x08,
     data: "524541444F4E4C59444154414442434B",
     type: 'data',
-    description: "資料區塊：只讀模式，無法寫入"
+    description: "資料區塊：只讀模式 (100)"
   },
   {
     block: 9, sector: 2, address: 0x09,
     data: "434F4E4649444D5F434F4E464947555F",
     type: 'data',
-    description: "資料區塊：只讀模式，無法寫入"
+    description: "資料區塊：金鑰 B 只讀 (101)"
   },
   {
     block: 10, sector: 2, address: 0x0A,
     data: "50524F54454354454452454144444154",
     type: 'data',
-    description: "資料區塊：只讀模式，無法寫入"
+    description: "資料區塊：金鑰 B 嚴格控制 (110)"
   },
   {
     block: 11, sector: 2, address: 0x0B,
-    data: "C1C2C3C4C5C6F87887C6C7C8C9CACB",
+    data: `C1C2C3C4C5C6${generateAccessBitsByBlocks(4, 5, 6, 7)}C6C7C8C9CACB`,
     type: 'trailer',
-    description: "扇區尾塊：只讀模式 (存取位元: F87887)",
+    description: "扇區尾塊：高安全性配置 - 從只讀到完全禁止",
     keyA: "C1C2C3C4C5C6",
     keyB: "C6C7C8C9CACB",
-    accessBits: "F87887"
+    accessBits: generateAccessBitsByBlocks(4, 5, 6, 7)
   },
-  // 扇區 3 - 需金鑰 B 讀寫模式
-  {
-    block: 12, sector: 3, address: 0x0C,
-    data: "5345435552454441544144415441444B",
-    type: 'data',
-    description: "資料區塊：需金鑰 B 才能讀寫"
-  },
-  {
-    block: 13, sector: 3, address: 0x0D,
-    data: "4B45594244415441434345535345525F",
-    type: 'data',
-    description: "資料區塊：需金鑰 B 才能讀寫"
-  },
-  {
-    block: 14, sector: 3, address: 0x0E,
-    data: "4F4E4C59574954484B4559424143434D",
-    type: 'data',
-    description: "資料區塊：需金鑰 B 才能讀寫"
-  },
-  {
-    block: 15, sector: 3, address: 0x0F,
-    data: "D1D2D3D4D5D6877009D6D7D8D9DADB",
-    type: 'trailer',
-    description: "扇區尾塊：需金鑰 B 讀寫 (存取位元: 877009)",
-    keyA: "D1D2D3D4D5D6",
-    keyB: "D6D7D8D9DADB",
-    accessBits: "877009"
-  },
-  // 扇區 4 - 遞增模式
+  // 扇區 3 - 值區塊專用配置
   (() => {
-    const valueData = createValueBlock(500, 0x10);
+    const valueData = createValueBlock(250, 0x0C);
     return {
-      block: 16, sector: 4, address: 0x10,
+      block: 12, sector: 3, address: 0x0C,
       data: valueData,
       type: 'value' as const,
-      description: "值區塊：僅允許遞增操作",
+      description: "值區塊：全開放值操作 (000)",
+      valueInfo: parseValueBlock(valueData) || undefined
+    };
+  })(),
+  (() => {
+    const valueData = createValueBlock(500, 0x0D);
+    return {
+      block: 13, sector: 3, address: 0x0D,
+      data: valueData,
+      type: 'value' as const,
+      description: "值區塊：金鑰 B 值操作 (001)",
+      valueInfo: parseValueBlock(valueData) || undefined
+    };
+  })(),
+  (() => {
+    const valueData = createValueBlock(750, 0x0E);
+    return {
+      block: 14, sector: 3, address: 0x0E,
+      data: valueData,
+      type: 'value' as const,
+      description: "值區塊：公開讀取 (010)",
       valueInfo: parseValueBlock(valueData) || undefined
     };
   })(),
   {
-    block: 17, sector: 4, address: 0x11,
-    data: "494E4352454D454E544F4E4C59444154",
+    block: 15, sector: 3, address: 0x0F,
+    data: `D1D2D3D4D5D6${generateAccessBitsByBlocks(0, 1, 2, 1)}D6D7D8D9DADB`,
+    type: 'trailer',
+    description: "扇區尾塊：值區塊優化配置",
+    keyA: "D1D2D3D4D5D6",
+    keyB: "D6D7D8D9DADB",
+    accessBits: generateAccessBitsByBlocks(0, 1, 2, 1)
+  },
+  // 扇區 4 - 數據保護配置
+  {
+    block: 16, sector: 4, address: 0x10,
+    data: "494D504F5254414E5444415441424C4F",
     type: 'data',
-    description: "資料區塊：遞增模式設定"
+    description: "重要資料：公開讀取，需金鑰寫入 (010)"
+  },
+  {
+    block: 17, sector: 4, address: 0x11,
+    data: "434B494E464F524D4154494F4E444154",
+    type: 'data',
+    description: "資料區塊：金鑰 B 控制讀寫 (006)"
   },
   {
     block: 18, sector: 4, address: 0x12,
     data: "56414C5545424C4F434B434F4E464947",
     type: 'data',
-    description: "資料區塊：遞增模式設定"
+    description: "配置資料：只讀模式 (100)"
   },
   {
     block: 19, sector: 4, address: 0x13,
-    data: "E1E2E3E4E5E6C078F8E6E7E8E9EAEB",
+    data: `E1E2E3E4E5E6${generateAccessBitsByBlocks(2, 6, 4, 2)}E6E7E8E9EAEB`,
     type: 'trailer',
-    description: "扇區尾塊：遞增模式 (存取位元: C078F8)",
+    description: "扇區尾塊：數據保護配置 - 分級權限管理",
     keyA: "E1E2E3E4E5E6",
     keyB: "E6E7E8E9EAEB",
-    accessBits: "C078F8"
+    accessBits: generateAccessBitsByBlocks(2, 6, 4, 2)
   },
-  // 扇區 5 - 遞減模式
+  // 扇區 5 - 應用程式配置
+  {
+    block: 20, sector: 5, address: 0x14,
+    data: "4150504C49434154494F4E44415441",
+    type: 'data',
+    description: "應用程式資料：完全開放 (000)"
+  },
+  {
+    block: 21, sector: 5, address: 0x15,
+    data: "434F4E4649475552415449204F4E4441",
+    type: 'data',
+    description: "配置資料：完全開放 (000)"
+  },
   (() => {
-    const valueData = createValueBlock(1000, 0x14);
+    const valueData = createValueBlock(1000, 0x16);
     return {
-      block: 20, sector: 5, address: 0x14,
+      block: 22, sector: 5, address: 0x16,
       data: valueData,
       type: 'value' as const,
-      description: "值區塊：僅允許遞減操作",
+      description: "值區塊：完全開放 (000)",
       valueInfo: parseValueBlock(valueData) || undefined
     };
   })(),
   {
-    block: 21, sector: 5, address: 0x15,
-    data: "4445435245544F4E4C59444154424C43",
-    type: 'data',
-    description: "資料區塊：遞減模式設定"
-  },
-  {
-    block: 22, sector: 5, address: 0x16,
-    data: "56414C5545434F4E534D5245434E5446",
-    type: 'data',
-    description: "資料區塊：遞減模式設定"
-  },
-  {
     block: 23, sector: 5, address: 0x17,
-    data: "F1F2F3F4F5F6C17CF1F6F7F8F9FAFB",
+    data: `F1F2F3F4F5F6${generateAccessBitsByBlocks(0, 0, 0, 0)}F6F7F8F9FAFB`,
     type: 'trailer',
-    description: "扇區尾塊：遞減模式 (存取位元: C17CF1)",
+    description: "扇區尾塊：應用程式配置 - 全開放模式",
     keyA: "F1F2F3F4F5F6",
     keyB: "F6F7F8F9FAFB",
-    accessBits: "C17CF1"
+    accessBits: generateAccessBitsByBlocks(0, 0, 0, 0)
   },
-  // 扇區 6 - 禁止存取模式
+  // 扇區 6 - 安全存取配置
   {
     block: 24, sector: 6, address: 0x18,
-    data: "464F5242494444454E414343455353444D",
+    data: "5345435552494459494D504F5254414E",
     type: 'data',
-    description: "資料區塊：禁止存取"
+    description: "安全資料：金鑰 B 嚴格控制 (110)"
   },
   {
     block: 25, sector: 6, address: 0x19,
-    data: "4E4F41434345535341434345535351433",
+    data: "434F4E464944454E5449414C444154",
     type: 'data',
-    description: "資料區塊：禁止存取"
+    description: "機密資料：金鑰 B 嚴格控制 (110)"
   },
   {
     block: 26, sector: 6, address: 0x1A,
-    data: "464F5242494444454E4F4E4C59415554",
+    data: "50524956415445494E464F524D415449",
     type: 'data',
-    description: "資料區塊：禁止存取"
+    description: "私人資料：金鑰 B 嚴格控制 (110)"
   },
   {
     block: 27, sector: 6, address: 0x1B,
-    data: "010203040506FFF000060708090A0B",
+    data: `010203040506${generateAccessBitsByBlocks(6, 6, 6, 6)}060708090A0B`,
     type: 'trailer',
-    description: "扇區尾塊：禁止存取模式 (存取位元: FFF000)",
+    description: "扇區尾塊：安全存取配置 - 全部金鑰 B 嚴格控制",
     keyA: "010203040506",
     keyB: "060708090A0B",
-    accessBits: "FFF000"
+    accessBits: generateAccessBitsByBlocks(6, 6, 6, 6)
   },
-  // 扇區 7 - 金鑰 B 讀取模式
+  // 扇區 7 - 最高安全性配置
   {
     block: 28, sector: 7, address: 0x1C,
-    data: "4B45594252454144494E474D4F444531",
+    data: "4C4F434B454444415441424C4F434B",
     type: 'data',
-    description: "資料區塊：金鑰 B 讀取模式"
+    description: "鎖定資料：完全禁止存取 (111)"
   },
   {
     block: 29, sector: 7, address: 0x1D,
-    data: "4B45594220434F4E54524F4C4C454453",
+    data: "504552414E454E544C594C4F434B4544",
     type: 'data',
-    description: "資料區塊：金鑰 B 讀取模式"
+    description: "永久鎖定：完全禁止存取 (111)"
   },
   {
     block: 30, sector: 7, address: 0x1E,
-    data: "52454144204F4E4C5920415554484F52",
+    data: "4E4F41434345535349484946495845",
     type: 'data',
-    description: "資料區塊：金鑰 B 讀取模式"
+    description: "不可存取：完全禁止存取 (111)"
   },
   {
     block: 31, sector: 7, address: 0x1F,
-    data: "111213141516877F08161718191A1B",
+    data: `111213141516${generateAccessBitsByBlocks(7, 7, 7, 7)}161718191A1B`,
     type: 'trailer',
-    description: "扇區尾塊：金鑰 B 讀取模式 (存取位元: 877F08)",
+    description: "扇區尾塊：最高安全性 - 完全鎖定所有區塊",
     keyA: "111213141516",
     keyB: "161718191A1B",
-    accessBits: "8F7F08"
+    accessBits: generateAccessBitsByBlocks(7, 7, 7, 7)
   },
-  // 扇區 8 - 值區塊雙向模式
+  
+  // 扇區 8 - 混合值區塊配置
   (() => {
     const valueData = createValueBlock(750, 0x20);
     return {
       block: 32, sector: 8, address: 0x20,
       data: valueData,
       type: 'value' as const,
-      description: "值區塊：雙向模式 (可遞增和遞減)",
+      description: "值區塊：公開讀取 (010)",
       valueInfo: parseValueBlock(valueData) || undefined
     };
   })(),
-  {
-    block: 33, sector: 8, address: 0x21,
-    data: "44554142494449524543434F4E54524F",
-    type: 'data',
-    description: "資料區塊：雙向控制模式"
-  },
+  (() => {
+    const valueData = createValueBlock(1250, 0x21);
+    return {
+      block: 33, sector: 8, address: 0x21,
+      data: valueData,
+      type: 'value' as const,
+      description: "值區塊：金鑰 B 控制 (001)",
+      valueInfo: parseValueBlock(valueData) || undefined
+    };
+  })(),
   {
     block: 34, sector: 8, address: 0x22,
     data: "56414C5545424C4F434B4D495848454D",
     type: 'data',
-    description: "資料區塊：雙向控制模式"
+    description: "資料區塊：只讀模式 (100)"
   },
   {
     block: 35, sector: 8, address: 0x23,
-    data: "212223242526C87CF8262728292A2B",
+    data: `212223242526${generateAccessBitsByBlocks(2, 1, 4, 2)}262728292A2B`,
     type: 'trailer',
-    description: "扇區尾塊：值區塊雙向模式 (存取位元: C87CF8)",
+    description: "扇區尾塊：混合值區塊配置",
     keyA: "212223242526",
     keyB: "262728292A2B",
-    accessBits: "C87CF8"
+    accessBits: generateAccessBitsByBlocks(2, 1, 4, 2)
   },
-  // 扇區 9 - 金鑰 B 嚴格模式
+  // 扇區 9 - 分層安全配置
   {
     block: 36, sector: 9, address: 0x24,
-    data: "4B45594253545249435441434345533",
+    data: "50554C424943494E464F524D4154494F",
     type: 'data',
-    description: "資料區塊：金鑰 B 嚴格模式"
+    description: "公開資訊：完全開放 (000)"
   },
   {
     block: 37, sector: 9, address: 0x25,
-    data: "4F4E4C594B45594243414E41434345533",
+    data: "4C494D495445444143434553534441544",
     type: 'data',
-    description: "資料區塊：金鑰 B 嚴格模式"
+    description: "受限資料：金鑰 B 讀寫 (001)"
   },
   {
     block: 38, sector: 9, address: 0x26,
-    data: "535452494354434F4E54524F4C4D4F44",
+    data: "50524956415445494E464F524D415449",
     type: 'data',
-    description: "資料區塊：金鑰 B 嚴格模式"
+    description: "私人資料：金鑰 B 嚴格控制 (110)"
   },
   {
     block: 39, sector: 9, address: 0x27,
-    data: "313233343536FF7F07363738393A3B",
+    data: `313233343536${generateAccessBitsByBlocks(0, 1, 6, 3)}363738393A3B`,
     type: 'trailer',
-    description: "扇區尾塊：金鑰 B 嚴格模式 (存取位元: FF7F07)",
+    description: "扇區尾塊：分層安全配置",
     keyA: "313233343536",
     keyB: "363738393A3B",
-    accessBits: "FF7F07"
+    accessBits: generateAccessBitsByBlocks(0, 1, 6, 3)
   },
-  // 扇區 10 - 值區塊只讀模式
-  (() => {
-    const valueData = createValueBlock(9999, 0x28);
-    return {
-      block: 40, sector: 10, address: 0x28,
-      data: valueData,
-      type: 'value' as const,
-      description: "值區塊：只讀模式 (無法修改)",
-      valueInfo: parseValueBlock(valueData) || undefined
-    };
-  })(),
+  
+  // 扇區 10-15 - 多樣化權限展示
+  // 扇區 10 - 全公開配置
+  {
+    block: 40, sector: 10, address: 0x28,
+    data: "5055424C494353484152454444415441",
+    type: 'data',
+    description: "公開共享資料：完全開放"
+  },
   {
     block: 41, sector: 10, address: 0x29,
-    data: "52454144434F4E4C5956414C5545424C",
+    data: "46524545414343455353494E464F524D",
     type: 'data',
-    description: "資料區塊：只讀模式"
+    description: "自由存取資訊：完全開放"
   },
   {
     block: 42, sector: 10, address: 0x2A,
-    data: "50524F54454354454456414C554553",
+    data: "4F50454E534F5552434549464F524D",
     type: 'data',
-    description: "資料區塊：只讀模式"
+    description: "開源資訊：完全開放"
   },
   {
     block: 43, sector: 10, address: 0x2B,
-    data: "414243444546DF7CF8464748494A4B",
+    data: `414243444546${generateAccessBitsByBlocks(0, 0, 0, 0)}464748494A4B`,
     type: 'trailer',
-    description: "扇區尾塊：值區塊只讀模式 (存取位元: DF7CF8)",
+    description: "扇區尾塊：全公開配置",
     keyA: "414243444546",
     keyB: "464748494A4B",
-    accessBits: "DF7CF8"
+    accessBits: generateAccessBitsByBlocks(0, 0, 0, 0)
   },
-  // 扇區 11 - 尾塊金鑰 A 可寫模式
+  
+  // 扇區 11 - 漸進式只讀配置
   {
     block: 44, sector: 11, address: 0x2C,
-    data: "4B45594157524954414245434F4E464",
+    data: "454449544142454C524541444F4E4C59",
     type: 'data',
-    description: "資料區塊：金鑰 A 可寫尾塊"
+    description: "可編輯轉只讀：公開讀取 (010)"
   },
   {
     block: 45, sector: 11, address: 0x2D,
-    data: "545241494C45524B454942594B415554",
+    data: "524541444F4E4C59414654455257524954",
     type: 'data',
-    description: "資料區塊：金鑰 A 可寫尾塊"
+    description: "寫後只讀：只讀模式 (100)"
   },
   {
     block: 46, sector: 11, address: 0x2E,
-    data: "4D4F444946494142454C434F4E54524F",
+    data: "50524F54454354454452454144444154",
     type: 'data',
-    description: "資料區塊：金鑰 A 可寫尾塊"
+    description: "受保護唯讀：金鑰 B 只讀 (101)"
   },
   {
     block: 47, sector: 11, address: 0x2F,
-    data: "515253545556088069565758595A5B",
+    data: `515253545556${generateAccessBitsByBlocks(2, 4, 5, 4)}565758595A5B`,
     type: 'trailer',
-    description: "扇區尾塊：金鑰 A 可寫模式 (存取位元: 088069)",
+    description: "扇區尾塊：漸進式只讀配置",
     keyA: "515253545556",
     keyB: "565758595A5B",
-    accessBits: "088069"
+    accessBits: generateAccessBitsByBlocks(2, 4, 5, 4)
   },
-  // 扇區 12 - 值區塊金鑰 B 控制模式
-  (() => {
-    const valueData = createValueBlock(2500, 0x30);
-    return {
-      block: 48, sector: 12, address: 0x30,
-      data: valueData,
-      type: 'value' as const,
-      description: "值區塊：金鑰 B 控制模式",
-      valueInfo: parseValueBlock(valueData) || undefined
-    };
-  })(),
+  
+  // 扇區 12-15 預設配置 (簡化)
+  {
+    block: 48, sector: 12, address: 0x30,
+    data: "00000000000000000000000000000000",
+    type: 'data',
+    description: "預設資料區塊"
+  },
   {
     block: 49, sector: 12, address: 0x31,
-    data: "4B45594253545249435456414C554543",
+    data: "00000000000000000000000000000000",
     type: 'data',
-    description: "資料區塊：金鑰 B 控制"
+    description: "預設資料區塊"
   },
   {
     block: 50, sector: 12, address: 0x32,
-    data: "4F4E4C594B45594243414E4D4F444946",
+    data: "00000000000000000000000000000000",
     type: 'data',
-    description: "資料區塊：金鑰 B 控制"
+    description: "預設資料區塊"
   },
   {
     block: 51, sector: 12, address: 0x33,
-    data: "616263646566CF7CF1666768696A6B",
+    data: `FFFFFFFFFFFF${generateAccessBitsByBlocks(0, 0, 0, 0)}FFFFFFFFFFFF`,
     type: 'trailer',
-    description: "扇區尾塊：值區塊金鑰 B 控制 (存取位元: CF7CF1)",
-    keyA: "616263646566",
-    keyB: "666768696A6B",
-    accessBits: "CF7CF1"
+    description: "扇區尾塊：預設配置",
+    keyA: "FFFFFFFFFFFF",
+    keyB: "FFFFFFFFFFFF",
+    accessBits: generateAccessBitsByBlocks(0, 0, 0, 0)
   },
-  // 扇區 13 - 尾塊雙金鑰控制模式
+  
+  // 扇區 13 - 完全鎖定範例
   {
     block: 52, sector: 13, address: 0x34,
-    data: "4455414C4B4559434F4E54524F4C4D4F",
+    data: "4C4F434B45444441544142434B313233",
     type: 'data',
-    description: "資料區塊：雙金鑰控制"
+    description: "鎖定資料：完全禁止 (111)"
   },
   {
     block: 53, sector: 13, address: 0x35,
-    data: "424F54484B455953434F4E54524F4C4C",
+    data: "4E4F41434345535349424C454441544142",
     type: 'data',
-    description: "資料區塊：雙金鑰控制"
+    description: "不可存取：完全禁止 (111)"
   },
   {
     block: 54, sector: 13, address: 0x36,
-    data: "545241494C45524143434553534249545",
+    data: "50455254414E454E544C594C4F434B4544",
     type: 'data',
-    description: "資料區塊：雙金鑰控制"
+    description: "永久鎖定：完全禁止 (111)"
   },
   {
     block: 55, sector: 13, address: 0x37,
-    data: "717273747576080069767778797A7B",
+    data: `717273747576${generateAccessBitsByBlocks(7, 7, 7, 7)}767778797A7B`,
     type: 'trailer',
-    description: "扇區尾塊：雙金鑰控制模式 (存取位元: 080069)",
+    description: "扇區尾塊：完全鎖定配置",
     keyA: "717273747576",
     keyB: "767778797A7B",
-    accessBits: "080069"
+    accessBits: generateAccessBitsByBlocks(7, 7, 7, 7)
   },
-  // 扇區 14-21 (簡化的預設設定)
+  
+  // 扇區 14-15 - 基本範例
   {
     block: 56, sector: 14, address: 0x38,
     data: "00000000000000000000000000000000",
     type: 'data',
-    description: "資料區塊：預設設定"
+    description: "基本資料區塊"
   },
   {
     block: 57, sector: 14, address: 0x39,
     data: "00000000000000000000000000000000",
     type: 'data',
-    description: "資料區塊：預設設定"
+    description: "基本資料區塊"
   },
   {
     block: 58, sector: 14, address: 0x3A,
     data: "00000000000000000000000000000000",
     type: 'data',
-    description: "資料區塊：預設設定"
+    description: "基本資料區塊"
   },
   {
     block: 59, sector: 14, address: 0x3B,
-    data: "FFFFFFFFFFFF078069FFFFFFFFFFFF",
+    data: `FFFFFFFFFFFF${generateAccessBitsByBlocks(1, 2, 3, 1)}FFFFFFFFFFFF`,
     type: 'trailer',
-    description: "扇區尾塊：預設設定",
+    description: "扇區尾塊：漸進式配置範例",
     keyA: "FFFFFFFFFFFF",
     keyB: "FFFFFFFFFFFF",
-    accessBits: "078069"
+    accessBits: generateAccessBitsByBlocks(1, 2, 3, 1)
   },
   {
     block: 60, sector: 15, address: 0x3C,
     data: "00000000000000000000000000000000",
     type: 'data',
-    description: "資料區塊：預設設定"
+    description: "最終資料區塊"
   },
   {
     block: 61, sector: 15, address: 0x3D,
     data: "00000000000000000000000000000000",
     type: 'data',
-    description: "資料區塊：預設設定"
+    description: "最終資料區塊"
   },
   {
     block: 62, sector: 15, address: 0x3E,
     data: "00000000000000000000000000000000",
     type: 'data',
-    description: "資料區塊：預設設定"
+    description: "最終資料區塊"
   },
   {
     block: 63, sector: 15, address: 0x3F,
-    data: "FFFFFFFFFFFF078069FFFFFFFFFFFF",
+    data: `FFFFFFFFFFFF${generateAccessBitsByBlocks(0, 0, 0, 0)}FFFFFFFFFFFF`,
     type: 'trailer',
-    description: "扇區尾塊：預設設定",
+    description: "扇區尾塊：預設配置",
     keyA: "FFFFFFFFFFFF",
     keyB: "FFFFFFFFFFFF",
-    accessBits: "078069"
+    accessBits: generateAccessBitsByBlocks(0, 0, 0, 0)
   }
 ];
 
@@ -684,79 +789,332 @@ const getDataGroupRange = (block: MemoryBlock, byteIndex: number): { start: numb
   return { start: 0, end: 15, type: 'normal' };
 };
 
-// 真正的存取位元位元級解析（按照 Mifare Classic 規範）
-const parseAccessBitsByBlock = (accessBits: string) => {
-  // 將hex字符串轉換為二進制
-  const hex = accessBits.padStart(6, '0');
-  let binary = '';
-  for (let i = 0; i < hex.length; i += 2) {
-    const byte = parseInt(hex.substr(i, 2), 16);
-    binary += byte.toString(2).padStart(8, '0');
+// 驗證存取位元格式是否正確
+const validateAccessBits = (accessBits: string) => {
+  // 檢查基本格式
+  if (!accessBits || accessBits.length !== 6) {
+    return { valid: false, error: '存取位元必須是6位十六進制字符' };
   }
   
-  // 提取每個區塊的C1, C2, C3位元
-  // 格式：C13 C23 C33 | C12 C22 C32 | C11 C21 C31 | C10 C20 C30
-  const extractBlockBits = (blockNum: number) => {
-    const c1Index = 4 + blockNum;    // C1位元位置
-    const c2Index = 12 + blockNum;   // C2位元位置  
-    const c3Index = 20 + blockNum;   // C3位元位置
+  // 檢查是否為有效十六進制
+  if (!/^[0-9A-Fa-f]{6}$/.test(accessBits)) {
+    return { valid: false, error: '存取位元包含無效的十六進制字符' };
+  }
+  
+  const hex = accessBits.toUpperCase();
+  const byte6 = parseInt(hex.substr(0, 2), 16);
+  const byte7 = parseInt(hex.substr(2, 2), 16);
+  const byte8 = parseInt(hex.substr(4, 2), 16);
+  
+  // 檢查反轉位元的一致性
+  const errors: string[] = [];
+  for (let blockNum = 0; blockNum < 4; blockNum++) {
+    const c1 = (byte7 >> (4 + blockNum)) & 1;
+    const c2 = (byte8 >> blockNum) & 1;
+    const c3 = (byte8 >> (4 + blockNum)) & 1;
     
-    const c1 = parseInt(binary[c1Index] || '0');
-    const c2 = parseInt(binary[c2Index] || '0');
-    const c3 = parseInt(binary[c3Index] || '0');
+    const notC1 = (byte6 >> blockNum) & 1;
+    const notC2 = (byte6 >> (4 + blockNum)) & 1;
+    const notC3 = (byte7 >> blockNum) & 1;
     
-    return { c1, c2, c3, value: c1 * 4 + c2 * 2 + c3 };
+    if (c1 !== (1 - notC1)) {
+      errors.push(`區塊${blockNum}: C1位元不一致`);
+    }
+    if (c2 !== (1 - notC2)) {
+      errors.push(`區塊${blockNum}: C2位元不一致`);
+    }
+    if (c3 !== (1 - notC3)) {
+      errors.push(`區塊${blockNum}: C3位元不一致`);
+    }
+  }
+  
+  if (errors.length > 0) {
+    return { valid: false, error: errors.join(', '), details: errors };
+  }
+  
+  return { valid: true };
+};
+
+// Mifare Classic 官方 Table 7: Sector Trailer 存取條件
+const SECTOR_TRAILER_ACCESS_CONDITIONS = {
+  '000': {
+    keyA: { read: '禁止', write: 'Key A' },
+    accessBits: { read: 'Key A', write: '禁止' },
+    keyB: { read: 'Key A', write: 'Key A' },
+    description: '默認配置，Key A 可讀寫 Key B 和 Access Bits（不可修改）'
+  },
+  '001': {
+    keyA: { read: '禁止', write: 'Key A' },
+    accessBits: { read: 'Key A', write: 'Key A' },
+    keyB: { read: 'Key A', write: 'Key A' },
+    description: 'Key A 可完全控制，可修改 Access Bits'
+  },
+  '010': {
+    keyA: { read: '禁止', write: '禁止' },
+    accessBits: { read: 'Key A', write: '禁止' },
+    keyB: { read: 'Key A', write: '禁止' },
+    description: '只讀模式，無法修改任何金鑰或 Access Bits'
+  },
+  '011': {
+    keyA: { read: '禁止', write: 'Key B' },
+    accessBits: { read: 'Key A|Key B', write: 'Key B' },
+    keyB: { read: '禁止', write: 'Key B' },
+    description: 'Key B 可寫入，雙金鑰可讀取 Access Bits'
+  },
+  '100': {
+    keyA: { read: '禁止', write: 'Key B' },
+    accessBits: { read: 'Key A|Key B', write: '禁止' },
+    keyB: { read: '禁止', write: 'Key B' },
+    description: 'Key B 可寫入金鑰，但 Access Bits 不可修改'
+  },
+  '101': {
+    keyA: { read: '禁止', write: '禁止' },
+    accessBits: { read: 'Key A|Key B', write: 'Key B' },
+    keyB: { read: '禁止', write: '禁止' },
+    description: '金鑰完全鎖定，只有 Key B 可修改 Access Bits'
+  },
+  '110': {
+    keyA: { read: '禁止', write: '禁止' },
+    accessBits: { read: 'Key A|Key B', write: '禁止' },
+    keyB: { read: '禁止', write: '禁止' },
+    description: '完全鎖定，只能讀取 Access Bits'
+  },
+  '111': {
+    keyA: { read: '禁止', write: '禁止' },
+    accessBits: { read: 'Key A|Key B', write: '禁止' },
+    keyB: { read: '禁止', write: '禁止' },
+    description: '完全鎖定，只能讀取 Access Bits'
+  }
+};
+
+// Mifare Classic Table 6: Data Block 存取條件
+const DATA_BLOCK_ACCESS_CONDITIONS = {
+  '000': {
+    read: 'Key A|Key B',
+    write: 'Key A|Key B', 
+    increment: 'Key A|Key B',
+    decrement: 'Key A|Key B',
+    description: '完全開放，雙金鑰均可存取'
+  },
+  '001': {
+    read: 'Key A|Key B',
+    write: '禁止',
+    increment: '禁止', 
+    decrement: 'Key A|Key B',
+    description: '讀寫分離，僅允許減值'
+  },
+  '010': {
+    read: 'Key A|Key B',
+    write: '禁止',
+    increment: '禁止',
+    decrement: '禁止',
+    description: '唯讀模式'
+  },
+  '011': {
+    read: 'Key B',
+    write: 'Key B',
+    increment: '禁止',
+    decrement: '禁止', 
+    description: '僅 Key B 可讀寫'
+  },
+  '100': {
+    read: 'Key A|Key B',
+    write: 'Key B',
+    increment: '禁止',
+    decrement: '禁止',
+    description: '雙金鑰可讀，僅 Key B 可寫'
+  },
+  '101': {
+    read: 'Key B',
+    write: '禁止',
+    increment: '禁止', 
+    decrement: '禁止',
+    description: '僅 Key B 可讀'
+  },
+  '110': {
+    read: 'Key A|Key B',
+    write: 'Key B',
+    increment: 'Key B',
+    decrement: 'Key A|Key B',
+    description: 'Key B 可寫入和增值，雙金鑰可減值'
+  },
+  '111': {
+    read: '禁止',
+    write: '禁止', 
+    increment: '禁止',
+    decrement: '禁止',
+    description: '完全禁止'
+  }
+};
+
+// 生成有效的存取位元 - 對應官方 Mifare Classic 規格
+const generateValidAccessBits = (mode: string = 'default') => {
+  const modes: { [key: string]: string } = {
+    'default': generateOfficialAccessBits('000'),      // 000 模式 - 預設配置
+    'editable': generateOfficialAccessBits('001'),     // 001 模式 - Key A 可修改存取位元  
+    'readonly': generateOfficialAccessBits('010'),     // 010 模式 - 只讀模式
+    'keyb_write': generateOfficialAccessBits('011'),   // 011 模式 - Key B 可寫入
+    'keyb_control': generateOfficialAccessBits('100'), // 100 模式 - Key B 可寫金鑰
+    'locked_keyb': generateOfficialAccessBits('101'),  // 101 模式 - 鎖定金鑰，Key B 改存取位元
+    'fully_locked': generateOfficialAccessBits('110'), // 110 模式 - 完全鎖定
+    'permanent_lock': generateOfficialAccessBits('111') // 111 模式 - 完全鎖定
   };
   
-  // 根據C1C2C3值確定權限
+  return modes[mode] || modes['default'];
+};
+
+// 範例：使用 generateAccessBitsByBlocks 創建混合權限配置
+// 這個函數展示如何為不同區塊設定不同的存取權限
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const generateMixedAccessBitsExample = () => {
+  // 範例：資料區塊公開讀取，尾塊使用金鑰 B 控制
+  return generateAccessBitsByBlocks(2, 2, 2, 1); // "3F0BC4"
+};
+
+// 從C1C2C3位元創建有效的存取位元（保留供未來使用）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const createAccessBitsFromPermissions = (
+  block0: { c1: number, c2: number, c3: number },
+  block1: { c1: number, c2: number, c3: number },
+  block2: { c1: number, c2: number, c3: number },
+  trailer: { c1: number, c2: number, c3: number }
+) => {
+  // 構建 byte6: !C2_3,!C2_2,!C2_1,!C2_0,!C1_3,!C1_2,!C1_1,!C1_0
+  const byte6 = 
+    ((1 - trailer.c2) << 7) |
+    ((1 - block2.c2) << 6) |
+    ((1 - block1.c2) << 5) |
+    ((1 - block0.c2) << 4) |
+    ((1 - trailer.c1) << 3) |
+    ((1 - block2.c1) << 2) |
+    ((1 - block1.c1) << 1) |
+    (1 - block0.c1);
+  
+  // 構建 byte7: C1_3,C1_2,C1_1,C1_0,!C3_3,!C3_2,!C3_1,!C3_0
+  const byte7 = 
+    (trailer.c1 << 7) |
+    (block2.c1 << 6) |
+    (block1.c1 << 5) |
+    (block0.c1 << 4) |
+    ((1 - trailer.c3) << 3) |
+    ((1 - block2.c3) << 2) |
+    ((1 - block1.c3) << 1) |
+    (1 - block0.c3);
+  
+  // 構建 byte8: C3_3,C3_2,C3_1,C3_0,C2_3,C2_2,C2_1,C2_0
+  const byte8 = 
+    (trailer.c3 << 7) |
+    (block2.c3 << 6) |
+    (block1.c3 << 5) |
+    (block0.c3 << 4) |
+    (trailer.c2 << 3) |
+    (block2.c2 << 2) |
+    (block1.c2 << 1) |
+    block0.c2;
+  
+  return byte6.toString(16).padStart(2, '0').toUpperCase() +
+         byte7.toString(16).padStart(2, '0').toUpperCase() +
+         byte8.toString(16).padStart(2, '0').toUpperCase();
+};
+
+// 真正的存取位元位元級解析（按照 Mifare Classic 規範）
+const parseAccessBitsByBlock = (accessBits: string) => {
+  // 首先驗證格式
+  const validation = validateAccessBits(accessBits);
+  if (!validation.valid) {
+    // 如果格式無效，生成一個預設的有效格式
+    console.warn(`存取位元格式無效 (${accessBits}): ${validation.error}`);
+    const fixedAccessBits = generateValidAccessBits('default');
+    console.warn(`已自動修復為預設模式: ${fixedAccessBits}`);
+    accessBits = fixedAccessBits;
+  }
+  
+  // 確保是6位十六進制字符串（3個位元組）
+  const hex = accessBits.padStart(6, '0');
+  
+  // 將十六進制轉換為3個位元組
+  const byte6 = parseInt(hex.substr(0, 2), 16);
+  const byte7 = parseInt(hex.substr(2, 2), 16);
+  const byte8 = parseInt(hex.substr(4, 2), 16);
+  
+  // 根據 Mifare Classic 規格解析位元
+  // Byte 6: !C2_3,!C2_2,!C2_1,!C2_0,!C1_3,!C1_2,!C1_1,!C1_0
+  // Byte 7: C1_3,C1_2,C1_1,C1_0,!C3_3,!C3_2,!C3_1,!C3_0  
+  // Byte 8: C3_3,C3_2,C3_1,C3_0,C2_3,C2_2,C2_1,C2_0
+  
+  const extractBlockBits = (blockNum: number) => {
+    // 提取每個區塊的 C1, C2, C3 位元
+    const c1 = (byte7 >> (4 + blockNum)) & 1;  // C1 位元在 byte7 的高4位
+    const c2 = (byte8 >> blockNum) & 1;        // C2 位元在 byte8 的低4位
+    const c3 = (byte8 >> (4 + blockNum)) & 1;  // C3 位元在 byte8 的高4位
+    
+    // 驗證：檢查反轉位元是否正確
+    const notC1 = (byte6 >> blockNum) & 1;     // !C1 位元在 byte6 的低4位
+    const notC2 = (byte6 >> (4 + blockNum)) & 1; // !C2 位元在 byte6 的高4位
+    const notC3 = (byte7 >> blockNum) & 1;     // !C3 位元在 byte7 的低4位
+    
+    // 檢查位元一致性
+    const c1Valid = c1 === (1 - notC1);
+    const c2Valid = c2 === (1 - notC2);
+    const c3Valid = c3 === (1 - notC3);
+    
+    return { 
+      c1, c2, c3, 
+      value: c1 * 4 + c2 * 2 + c3,
+      valid: c1Valid && c2Valid && c3Valid,
+      debug: {
+        c1, notC1, c1Valid,
+        c2, notC2, c2Valid,
+        c3, notC3, c3Valid
+      }
+    };
+  };
+  
+  // 根據C1C2C3值確定權限 - 使用官方 Mifare Classic 表格
   const getPermissionsByBits = (c1: number, c2: number, c3: number, isTrailer: boolean = false) => {
-    const value = c1 * 4 + c2 * 2 + c3;
+    const binaryString = `${c1}${c2}${c3}`;
     
     if (isTrailer) {
-      // 扇區尾塊權限表
-      switch (value) {
-        case 0: // 000
-          return { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' };
-        case 1: // 001
-          return { readA: 'A', writeA: 'A', readAccessBits: 'A', writeAccessBits: 'A', readB: 'A', writeB: 'A' };
-        case 2: // 010
-          return { readA: '禁止', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' };
-        case 3: // 011
-          return { readA: 'A', writeA: 'A', readAccessBits: 'A', writeAccessBits: 'A', readB: '禁止', writeB: 'A' };
-        case 4: // 100
-          return { readA: 'A', writeA: 'A', readAccessBits: 'A', writeAccessBits: 'A', readB: 'A', writeB: 'A' };
-        case 5: // 101
-          return { readA: '禁止', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' };
-        case 6: // 110
-          return { readA: 'A', writeA: 'A', readAccessBits: 'A', writeAccessBits: 'A', readB: '禁止', writeB: 'A' };
-        case 7: // 111
-          return { readA: '禁止', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'A', readB: '禁止', writeB: 'A' };
-        default:
-          return { readA: '錯誤', writeA: '錯誤', readAccessBits: '錯誤', writeAccessBits: '錯誤', readB: '錯誤', writeB: '錯誤' };
+      // 使用官方 Table 7: Sector Trailer 存取條件
+      const condition = SECTOR_TRAILER_ACCESS_CONDITIONS[binaryString as keyof typeof SECTOR_TRAILER_ACCESS_CONDITIONS];
+      if (condition) {
+        return {
+          keyA: condition.keyA,
+          accessBits: condition.accessBits,
+          keyB: condition.keyB,
+          description: condition.description,
+          binaryValue: binaryString
+        };
       }
     } else {
-      // 資料區塊權限表
-      switch (value) {
-        case 0: // 000
-          return { read: 'A/B', write: 'A/B', increment: 'A/B', decrement: 'A/B' };
-        case 1: // 001
-          return { read: 'B', write: 'B', increment: 'B', decrement: 'B' };
-        case 2: // 010
-          return { read: '公開', write: 'A/B', increment: 'A/B', decrement: 'A/B' };
-        case 3: // 011
-          return { read: 'B', write: 'A/B', increment: 'A/B', decrement: 'A/B' };
-        case 4: // 100
-          return { read: 'A/B', write: '禁止', increment: '禁止', decrement: '禁止' };
-        case 5: // 101
-          return { read: 'B', write: '禁止', increment: '禁止', decrement: '禁止' };
-        case 6: // 110
-          return { read: 'B', write: 'B', increment: 'B', decrement: 'B' };
-        case 7: // 111
-          return { read: '禁止', write: '禁止', increment: '禁止', decrement: '禁止' };
-        default:
-          return { read: '錯誤', write: '錯誤', increment: '錯誤', decrement: '錯誤' };
+      // 使用官方 Table 6: Data Block 存取條件
+      const condition = DATA_BLOCK_ACCESS_CONDITIONS[binaryString as keyof typeof DATA_BLOCK_ACCESS_CONDITIONS];
+      if (condition) {
+        return {
+          read: condition.read,
+          write: condition.write,
+          increment: condition.increment,
+          decrement: condition.decrement,
+          description: condition.description,
+          binaryValue: binaryString
+        };
       }
     }
+    
+    // 如果找不到對應的條件，返回錯誤
+    return isTrailer 
+      ? { 
+          keyA: { read: '錯誤', write: '錯誤' },
+          accessBits: { read: '錯誤', write: '錯誤' },
+          keyB: { read: '錯誤', write: '錯誤' },
+          description: `未知的存取條件: ${binaryString}`,
+          binaryValue: binaryString
+        }
+      : { 
+          read: '錯誤', write: '錯誤', increment: '錯誤', decrement: '錯誤',
+          description: `未知的存取條件: ${binaryString}`,
+          binaryValue: binaryString
+        };
   };
   
   // 解析每個區塊
@@ -766,6 +1124,7 @@ const parseAccessBitsByBlock = (accessBits: string) => {
   const trailerBits = extractBlockBits(3);
   
   return {
+    rawBytes: { byte6, byte7, byte8 },
     block0: {
       bits: block0Bits,
       permissions: getPermissionsByBits(block0Bits.c1, block0Bits.c2, block0Bits.c3)
@@ -782,367 +1141,105 @@ const parseAccessBitsByBlock = (accessBits: string) => {
       bits: trailerBits,
       permissions: getPermissionsByBits(trailerBits.c1, trailerBits.c2, trailerBits.c3, true)
     },
-    rawBinary: binary,
     isValidFormat: true // 可以添加格式驗證邏輯
   };
 };
 
-// 解析存取位元並返回每個區塊的具體權限
-const parseBlockPermissions = (accessBits: string) => {
-  // 將存取位元轉換為二進位並解析每個區塊的權限
-  const getBlockPermissions = (accessBits: string) => {
-    // 根據 Mifare Classic 標準解析存取位元
-    switch (accessBits) {
-      case '078069': // 000
-        return {
-          block0: { read: 'A/B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block1: { read: 'A/B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block2: { read: 'A/B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' }
-        };
-      case '787F07': // 010
-        return {
-          block0: { read: '公開', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block1: { read: '公開', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block2: { read: '公開', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' }
-        };
-      case 'F87887': // 100
-        return {
-          block0: { read: 'A/B', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          block1: { read: 'A/B', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          block2: { read: 'A/B', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: '禁止', readB: '禁止', writeB: '禁止' }
-        };
-      case '877009': // 001
-        return {
-          block0: { read: 'B', write: 'B', increment: 'B', decrement: 'B', transfer: 'B', restore: 'B' },
-          block1: { read: 'B', write: 'B', increment: 'B', decrement: 'B', transfer: 'B', restore: 'B' },
-          block2: { read: 'B', write: 'B', increment: 'B', decrement: 'B', transfer: 'B', restore: 'B' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' }
-        };
-      case '8F7F08': // 011
-        return {
-          block0: { read: 'B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block1: { read: 'B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block2: { read: 'B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' }
-        };
-      case 'FF7F88': // 101
-        return {
-          block0: { read: 'B', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          block1: { read: 'B', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          block2: { read: 'B', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: '禁止', readB: '禁止', writeB: '禁止' }
-        };
-      case 'FF7F07': // 110
-        return {
-          block0: { read: 'B', write: 'B', increment: 'B', decrement: 'B', transfer: 'B', restore: 'B' },
-          block1: { read: 'B', write: 'B', increment: 'B', decrement: 'B', transfer: 'B', restore: 'B' },
-          block2: { read: 'B', write: 'B', increment: 'B', decrement: 'B', transfer: 'B', restore: 'B' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' }
-        };
-      case 'FFF000': // 111
-        return {
-          block0: { read: '禁止', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          block1: { read: '禁止', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          block2: { read: '禁止', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          trailer: { readA: '禁止', writeA: '禁止', readAccessBits: '禁止', writeAccessBits: '禁止', readB: '禁止', writeB: '禁止' }
-        };
-      
-      // 值區塊專用模式
-      case 'C078F8': // 000-V (遞增模式)
-        return {
-          block0: { read: 'A/B', write: '禁止', increment: 'B', decrement: '禁止', transfer: 'B', restore: 'A/B' },
-          block1: { read: 'A/B', write: '禁止', increment: 'B', decrement: '禁止', transfer: 'B', restore: 'A/B' },
-          block2: { read: 'A/B', write: '禁止', increment: 'B', decrement: '禁止', transfer: 'B', restore: 'A/B' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' }
-        };
-      case 'C17CF1': // 001-V (遞減模式)
-        return {
-          block0: { read: 'A/B', write: '禁止', increment: '禁止', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block1: { read: 'A/B', write: '禁止', increment: '禁止', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block2: { read: 'A/B', write: '禁止', increment: '禁止', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' }
-        };
-      case 'C87CF8': // 010-V (雙向模式)
-        return {
-          block0: { read: 'A/B', write: '禁止', increment: 'B', decrement: 'A', transfer: 'A/B', restore: 'A/B' },
-          block1: { read: 'A/B', write: '禁止', increment: 'B', decrement: 'A', transfer: 'A/B', restore: 'A/B' },
-          block2: { read: 'A/B', write: '禁止', increment: 'B', decrement: 'A', transfer: 'A/B', restore: 'A/B' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' }
-        };
-      case 'CF7CF1': // 011-V (金鑰 B 控制)
-        return {
-          block0: { read: 'B', write: '禁止', increment: 'B', decrement: 'B', transfer: 'B', restore: 'B' },
-          block1: { read: 'B', write: '禁止', increment: 'B', decrement: 'B', transfer: 'B', restore: 'B' },
-          block2: { read: 'B', write: '禁止', increment: 'B', decrement: 'B', transfer: 'B', restore: 'B' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'B', readB: '禁止', writeB: 'B' }
-        };
-      case 'DF7CF8': // 100-V (值區塊只讀)
-        return {
-          block0: { read: 'A/B', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          block1: { read: 'A/B', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          block2: { read: 'A/B', write: '禁止', increment: '禁止', decrement: '禁止', transfer: '禁止', restore: '禁止' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: '禁止', readB: '禁止', writeB: '禁止' }
-        };
-
-      // 扇區尾塊專用模式
-      case '088069': // 001-T (金鑰 A 可寫)
-        return {
-          block0: { read: 'A/B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block1: { read: 'A/B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block2: { read: 'A/B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          trailer: { readA: 'A', writeA: 'A', readAccessBits: 'A', writeAccessBits: 'A/B', readB: 'A', writeB: 'A/B' }
-        };
-      case '080069': // 011-T (雙金鑰控制)
-        return {
-          block0: { read: 'A/B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block1: { read: 'A/B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          block2: { read: 'A/B', write: 'A/B', increment: 'A/B', decrement: 'A/B', transfer: 'A/B', restore: 'A/B' },
-          trailer: { readA: 'A', writeA: '禁止', readAccessBits: 'A', writeAccessBits: 'A/B', readB: '禁止', writeB: 'A/B' }
-        };
-
-      default:
-        return {
-          block0: { read: '未知', write: '未知', increment: '未知', decrement: '未知', transfer: '未知', restore: '未知' },
-          block1: { read: '未知', write: '未知', increment: '未知', decrement: '未知', transfer: '未知', restore: '未知' },
-          block2: { read: '未知', write: '未知', increment: '未知', decrement: '未知', transfer: '未知', restore: '未知' },
-          trailer: { readA: '未知', writeA: '未知', readAccessBits: '未知', writeAccessBits: '未知', readB: '未知', writeB: '未知' }
-        };
-    }
-  };
-
-  return getBlockPermissions(accessBits);
-};
-
 // 解析存取位元
 const parseAccessBits = (accessBits: string) => {
+  // 首先驗證格式
+  const validation = validateAccessBits(accessBits);
+  if (!validation.valid) {
+    // 如果格式無效，使用預設模式
+    accessBits = generateValidAccessBits('default');
+  }
+  
+  // 基於官方存取條件表格生成模式描述
   const getAccessModeDescription = (accessBits: string) => {
-    switch (accessBits) {
-      // 標準模式
-      case '078069':
-        return {
-          mode: '預設模式 (000)',
-          description: '所有區塊可用金鑰 A 或 B 讀寫',
-          color: 'text-green-400',
-          bgColor: 'bg-green-900/30',
-          dataBlocks: '金鑰 A/B 可讀寫',
-          trailer: '金鑰 A 可讀存取位元，金鑰 B 可寫'
-        };
-      case '787F07':
-        return {
-          mode: '公開讀取模式 (010)',
-          description: '任何人可讀取，需金鑰寫入',
-          color: 'text-blue-400',
-          bgColor: 'bg-blue-900/30',
-          dataBlocks: '公開可讀，金鑰 A/B 可寫',
-          trailer: '金鑰 A 可讀，金鑰 B 可寫存取位元'
-        };
-      case 'F87887':
-        return {
-          mode: '只讀模式 (100)',
-          description: '只能讀取，永遠無法寫入',
-          color: 'text-red-400',
-          bgColor: 'bg-red-900/30',
-          dataBlocks: '金鑰 A/B 可讀，永不可寫',
-          trailer: '金鑰 A 可讀，永不可寫存取位元'
-        };
-      case '877009':
-        return {
-          mode: '金鑰 B 讀寫模式 (001)',
-          description: '需要金鑰 B 才能讀寫',
-          color: 'text-purple-400',
-          bgColor: 'bg-purple-900/30',
-          dataBlocks: '金鑰 B 可讀寫',
-          trailer: '金鑰 A 可讀，金鑰 B 可寫存取位元'
-        };
-      case '8F7F08':
-        return {
-          mode: '金鑰 B 讀取模式 (011)',
-          description: '金鑰 B 可讀，金鑰 A/B 可寫',
-          color: 'text-purple-300',
-          bgColor: 'bg-purple-800/30',
-          dataBlocks: '金鑰 B 可讀，金鑰 A/B 可寫',
-          trailer: '金鑰 A 可讀，金鑰 B 可寫存取位元'
-        };
-      case 'FF7F88':
-        return {
-          mode: '金鑰 B 只讀模式 (101)',
-          description: '僅金鑰 B 可讀，無法寫入',
-          color: 'text-purple-500',
-          bgColor: 'bg-purple-700/30',
-          dataBlocks: '金鑰 B 可讀，永不可寫',
-          trailer: '金鑰 A 可讀，永不可寫存取位元'
-        };
-      case 'FF7F07':
-        return {
-          mode: '金鑰 B 嚴格模式 (110)',
-          description: '僅金鑰 B 可讀寫',
-          color: 'text-purple-600',
-          bgColor: 'bg-purple-600/30',
-          dataBlocks: '僅金鑰 B 可讀寫',
-          trailer: '金鑰 A 可讀，金鑰 B 可寫存取位元'
-        };
-      case 'FFF000':
-        return {
-          mode: '禁止存取模式 (111)',
-          description: '完全禁止存取',
-          color: 'text-gray-400',
-          bgColor: 'bg-gray-900/30',
-          dataBlocks: '完全禁止存取',
-          trailer: '完全禁止存取'
-        };
-      
-      // 值區塊專用模式
-      case 'C078F8':
-        return {
-          mode: '值區塊遞增模式 (000-V)',
-          description: '值區塊只能遞增，不能遞減',
-          color: 'text-orange-400',
-          bgColor: 'bg-orange-900/30',
-          dataBlocks: '金鑰 A/B 可讀，金鑰 B 可遞增',
-          trailer: '金鑰 A 可讀，金鑰 B 可寫存取位元'
-        };
-      case 'C17CF1':
-        return {
-          mode: '值區塊遞減模式 (001-V)',
-          description: '值區塊只能遞減，不能遞增',
-          color: 'text-yellow-400',
-          bgColor: 'bg-yellow-900/30',
-          dataBlocks: '金鑰 A/B 可讀，金鑰 A/B 可遞減',
-          trailer: '金鑰 A 可讀，金鑰 B 可寫存取位元'
-        };
-      case 'C87CF8':
-        return {
-          mode: '值區塊雙向模式 (010-V)',
-          description: '值區塊可遞增和遞減',
-          color: 'text-cyan-400',
-          bgColor: 'bg-cyan-900/30',
-          dataBlocks: '金鑰 A/B 可讀，金鑰 A 可遞減，金鑰 B 可遞增',
-          trailer: '金鑰 A 可讀，金鑰 B 可寫存取位元'
-        };
-      case 'CF7CF1':
-        return {
-          mode: '值區塊金鑰 B 控制 (011-V)',
-          description: '僅金鑰 B 可操作值區塊',
-          color: 'text-indigo-400',
-          bgColor: 'bg-indigo-900/30',
-          dataBlocks: '金鑰 B 可讀，金鑰 B 可遞增/遞減',
-          trailer: '金鑰 A 可讀，金鑰 B 可寫存取位元'
-        };
-      case 'DF7CF8':
-        return {
-          mode: '值區塊只讀模式 (100-V)',
-          description: '值區塊只能讀取，無法修改',
-          color: 'text-pink-400',
-          bgColor: 'bg-pink-900/30',
-          dataBlocks: '金鑰 A/B 可讀，永不可寫',
-          trailer: '金鑰 A 可讀，永不可寫存取位元'
-        };
-      case 'EF7CF1':
-        return {
-          mode: '值區塊金鑰 B 只讀 (101-V)',
-          description: '僅金鑰 B 可讀取值區塊',
-          color: 'text-rose-400',
-          bgColor: 'bg-rose-900/30',
-          dataBlocks: '金鑰 B 可讀，永不可寫',
-          trailer: '金鑰 A 可讀，永不可寫存取位元'
-        };
-      case 'FF7CF8':
-        return {
-          mode: '值區塊嚴格控制 (110-V)',
-          description: '僅金鑰 B 可讀寫值區塊',
-          color: 'text-violet-400',
-          bgColor: 'bg-violet-900/30',
-          dataBlocks: '僅金鑰 B 可讀寫',
-          trailer: '金鑰 A 可讀，金鑰 B 可寫存取位元'
-        };
-      case 'FFF001':
-        return {
-          mode: '值區塊禁止模式 (111-V)',
-          description: '值區塊完全禁止存取',
-          color: 'text-stone-400',
-          bgColor: 'bg-stone-900/30',
-          dataBlocks: '完全禁止存取',
-          trailer: '完全禁止存取'
-        };
-
-      // 扇區尾塊專用模式
-      case '088069':
-        return {
-          mode: '尾塊金鑰 A 可寫 (001-T)',
-          description: '金鑰 A 可讀寫存取位元',
-          color: 'text-emerald-400',
-          bgColor: 'bg-emerald-900/30',
-          dataBlocks: '金鑰 A/B 可讀寫',
-          trailer: '金鑰 A 可讀寫存取位元，金鑰 B 可寫'
-        };
-      case '008069':
-        return {
-          mode: '尾塊禁寫金鑰 A (010-T)',
-          description: '金鑰 A 不可讀，金鑰 B 可寫存取位元',
-          color: 'text-teal-400',
-          bgColor: 'bg-teal-900/30',
-          dataBlocks: '金鑰 A/B 可讀寫',
-          trailer: '金鑰 A 不可讀，金鑰 B 可寫存取位元'
-        };
-      case '080069':
-        return {
-          mode: '尾塊雙金鑰控制 (011-T)',
-          description: '金鑰 A 可讀，金鑰 A/B 可寫存取位元',
-          color: 'text-lime-400',
-          bgColor: 'bg-lime-900/30',
-          dataBlocks: '金鑰 A/B 可讀寫',
-          trailer: '金鑰 A 可讀，金鑰 A/B 可寫存取位元'
-        };
-      case '000069':
-        return {
-          mode: '尾塊完全開放 (100-T)',
-          description: '金鑰 A 可讀，金鑰 A/B 可寫存取位元和金鑰',
-          color: 'text-amber-400',
-          bgColor: 'bg-amber-900/30',
-          dataBlocks: '金鑰 A/B 可讀寫',
-          trailer: '金鑰 A 可讀，金鑰 A/B 可寫所有內容'
-        };
-      case '008009':
-        return {
-          mode: '尾塊嚴格模式 (101-T)',
-          description: '金鑰 A 不可讀，金鑰 B 可寫存取位元',
-          color: 'text-red-500',
-          bgColor: 'bg-red-800/30',
-          dataBlocks: '金鑰 A/B 可讀寫',
-          trailer: '金鑰 A 不可讀，金鑰 B 可寫存取位元'
-        };
-      case '080009':
-        return {
-          mode: '尾塊混合控制 (110-T)',
-          description: '金鑰 A 可讀，金鑰 A/B 可寫',
-          color: 'text-orange-500',
-          bgColor: 'bg-orange-800/30',
-          dataBlocks: '金鑰 A/B 可讀寫',
-          trailer: '金鑰 A 可讀，金鑰 A/B 可寫存取位元'
-        };
-      case '000009':
-        return {
-          mode: '尾塊危險模式 (111-T)',
-          description: '金鑰 A 可讀寫所有內容 (危險)',
-          color: 'text-red-600',
-          bgColor: 'bg-red-700/30',
-          dataBlocks: '金鑰 A/B 可讀寫',
-          trailer: '金鑰 A 可讀寫所有內容 (包括金鑰)'
-        };
-
-      default:
-        return {
-          mode: '自定義模式',
-          description: '未知或自定義的存取控制設定',
-          color: 'text-slate-400',
-          bgColor: 'bg-slate-900/30',
-          dataBlocks: '未知權限配置',
-          trailer: '未知權限配置'
-        };
-    }
+    // 使用 parseAccessBitsByBlock 來取得官方的權限分析
+    const bitAnalysis = parseAccessBitsByBlock(accessBits);
+    
+    // 取得尾塊的 C1C2C3 值
+    const trailerBits = bitAnalysis.trailer.bits;
+    const c1c2c3 = `${trailerBits.c1}${trailerBits.c2}${trailerBits.c3}`;
+    
+    // 取得資料區塊的權限描述（使用第一個資料區塊作為代表）
+    const dataBlockPermissions = bitAnalysis.block0.permissions;
+    const trailerPermissions = bitAnalysis.trailer.permissions;
+    
+    // 基於 C1C2C3 組合決定模式名稱和顏色
+    const modeInfo = (() => {
+      switch (c1c2c3) {
+        case '000':
+          return {
+            mode: '預設模式 (000)',
+            color: 'text-green-400',
+            bgColor: 'bg-green-900/30'
+          };
+        case '001':
+          return {
+            mode: '金鑰 B 讀寫模式 (001)',
+            color: 'text-purple-400',
+            bgColor: 'bg-purple-900/30'
+          };
+        case '010':
+          return {
+            mode: '公開讀取模式 (010)',
+            color: 'text-blue-400',
+            bgColor: 'bg-blue-900/30'
+          };
+        case '011':
+          return {
+            mode: '金鑰 B 讀取模式 (011)',
+            color: 'text-purple-300',
+            bgColor: 'bg-purple-800/30'
+          };
+        case '100':
+          return {
+            mode: '只讀模式 (100)',
+            color: 'text-red-400',
+            bgColor: 'bg-red-900/30'
+          };
+        case '101':
+          return {
+            mode: '金鑰 B 只讀模式 (101)',
+            color: 'text-purple-500',
+            bgColor: 'bg-purple-700/30'
+          };
+        case '110':
+          return {
+            mode: '金鑰 B 嚴格模式 (110)',
+            color: 'text-purple-600',
+            bgColor: 'bg-purple-600/30'
+          };
+        case '111':
+          return {
+            mode: '禁止存取模式 (111)',
+            color: 'text-gray-400',
+            bgColor: 'bg-gray-900/30'
+          };
+        default:
+          return {
+            mode: '自定義模式',
+            color: 'text-slate-400',
+            bgColor: 'bg-slate-900/30'
+          };
+      }
+    })();
+    
+    // 生成描述文字
+    const description = trailerPermissions.description || '存取條件配置';
+    const dataBlocks = dataBlockPermissions.description || '資料區塊權限';
+    const trailer = trailerPermissions.description || '尾塊權限';
+    
+    return {
+      mode: modeInfo.mode,
+      description: description,
+      color: modeInfo.color,
+      bgColor: modeInfo.bgColor,
+      dataBlocks: dataBlocks,
+      trailer: trailer
+    };
   };
 
   return getAccessModeDescription(accessBits);
@@ -1153,7 +1250,20 @@ const getSectorTrailerInfo = (sectorNumber: number, memoryData: MemoryBlock[]) =
   const trailerBlock = memoryData.find(block => 
     block.sector === sectorNumber && block.type === 'trailer'
   );
-  return trailerBlock;
+  
+  if (!trailerBlock) return null;
+  
+  // 從實際的 data 中提取存取位元（第6-8位元組，即第12-17字符）
+  const actualAccessBits = trailerBlock.data.substring(12, 18);
+  
+  // 創建一個新的物件，使用實際的存取位元
+  return {
+    ...trailerBlock,
+    accessBits: actualAccessBits,
+    // 也從 data 中提取實際的金鑰（雖然通常無法讀取）
+    keyA: trailerBlock.data.substring(0, 12),
+    keyB: trailerBlock.data.substring(20, 32)
+  };
 };
 
 const HexEditor = ({ 
@@ -1460,41 +1570,44 @@ const BlockStructureDetails = ({
                             </div>
                             <div className="grid grid-cols-2 gap-1 text-xs">
                               <div className="flex justify-between">
-                                <span className="text-slate-300">讀金鑰A:</span>
-                                <span className={`font-mono ${currentBlockData.permissions.readA === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
-                                  {currentBlockData.permissions.readA}
+                                <span className="text-slate-300">金鑰A 讀取:</span>
+                                <span className={`font-mono ${currentBlockData.permissions.keyA?.read === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
+                                  {currentBlockData.permissions.keyA?.read || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">寫金鑰A:</span>
-                                <span className={`font-mono ${currentBlockData.permissions.writeA === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
-                                  {currentBlockData.permissions.writeA}
+                                <span className="text-slate-300">金鑰A 寫入:</span>
+                                <span className={`font-mono ${currentBlockData.permissions.keyA?.write === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
+                                  {currentBlockData.permissions.keyA?.write || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">讀存取位元:</span>
-                                <span className={`font-mono ${currentBlockData.permissions.readAccessBits === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
-                                  {currentBlockData.permissions.readAccessBits}
+                                <span className="text-slate-300">存取位元 讀取:</span>
+                                <span className={`font-mono ${currentBlockData.permissions.accessBits?.read === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
+                                  {currentBlockData.permissions.accessBits?.read || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">寫存取位元:</span>
-                                <span className={`font-mono ${currentBlockData.permissions.writeAccessBits === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
-                                  {currentBlockData.permissions.writeAccessBits}
+                                <span className="text-slate-300">存取位元 寫入:</span>
+                                <span className={`font-mono ${currentBlockData.permissions.accessBits?.write === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
+                                  {currentBlockData.permissions.accessBits?.write || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">讀金鑰B:</span>
-                                <span className={`font-mono ${currentBlockData.permissions.readB === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
-                                  {currentBlockData.permissions.readB}
+                                <span className="text-slate-300">金鑰B 讀取:</span>
+                                <span className={`font-mono ${currentBlockData.permissions.keyB?.read === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
+                                  {currentBlockData.permissions.keyB?.read || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">寫金鑰B:</span>
-                                <span className={`font-mono ${currentBlockData.permissions.writeB === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
-                                  {currentBlockData.permissions.writeB}
+                                <span className="text-slate-300">金鑰B 寫入:</span>
+                                <span className={`font-mono ${currentBlockData.permissions.keyB?.write === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
+                                  {currentBlockData.permissions.keyB?.write || 'N/A'}
                                 </span>
                               </div>
+                            </div>
+                            <div className="mt-2 text-xs text-slate-400 bg-slate-800 p-2 rounded">
+                              <strong>說明:</strong> {currentBlockData.permissions.description || '無可用說明'}
                             </div>
                           </div>
                         );
@@ -1535,6 +1648,9 @@ const BlockStructureDetails = ({
                                   {currentBlockData.permissions.decrement}
                                 </span>
                               </div>
+                            </div>
+                            <div className="mt-2 text-xs text-slate-400 bg-slate-800 p-2 rounded">
+                              <strong>說明:</strong> {currentBlockData.permissions.description || '無可用說明'}
                             </div>
                           </div>
                         );
@@ -1578,10 +1694,59 @@ const BlockStructureDetails = ({
               <h5 className="font-semibold text-yellow-200 mb-2">存取位元控制</h5>
               <div className="space-y-1 text-slate-300 text-xs">
                 <p>• 每個扇區的 4 個區塊各有獨立的 3 位元控制 (C1C2C3)</p>
-                <p>• 位元組 6: C1₃C1₂C1₁C1₀ (反向)</p>
-                <p>• 位元組 7: C2₃C2₂C2₁C2₀ (反向)</p>
-                <p>• 位元組 8: C3₃C3₂C3₁C3₀ (反向)</p>
-                <p>• 位元組 9: 自由運用</p>
+                <p>• 位元組 6: !C2₃!C2₂!C2₁!C2₀!C1₃!C1₂!C1₁!C1₀ (反向)</p>
+                <p>• 位元組 7: C1₃C1₂C1₁C1₀!C3₃!C3₂!C3₁!C3₀</p>
+                <p>• 位元組 8: C3₃C3₂C3₁C3₀C2₃C2₂C2₁C2₀</p>
+                
+                {/* 調試資訊 */}
+                {(() => {
+                  const accessBits = block.accessBits || '';
+                  const validation = validateAccessBits(accessBits);
+                  
+                  return (
+                    <div className="mt-2 p-2 bg-gray-900/50 rounded border border-gray-600">
+                      <div className="text-yellow-200 font-semibold mb-1">存取位元驗證與解析:</div>
+                      
+                      {/* 格式驗證結果 */}
+                      <div className="mb-2 p-1 rounded border">
+                        <div className={`text-xs ${validation.valid ? 'text-green-300 border-green-600' : 'text-red-300 border-red-600'}`}>
+                          <span className="font-semibold">格式驗證: </span>
+                          {validation.valid ? '✓ 格式正確' : `❌ ${validation.error}`}
+                        </div>
+                        {!validation.valid && (
+                          <div className="text-xs text-orange-300 mt-1">
+                            將自動使用預設模式 ({generateValidAccessBits('default')})
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* 位元解析結果 */}
+                      {(() => {
+                        const effectiveAccessBits = validation.valid ? accessBits : generateValidAccessBits('default');
+                        const bitAnalysis = parseAccessBitsByBlock(effectiveAccessBits);
+                        
+                        return (
+                          <div>
+                            <div className="text-yellow-200 text-xs mb-1">位元解析 ({effectiveAccessBits}):</div>
+                            <div className="grid grid-cols-2 gap-1 text-xs">
+                              <div>區塊0: C1C2C3 = {bitAnalysis.block0.bits.c1}{bitAnalysis.block0.bits.c2}{bitAnalysis.block0.bits.c3} 
+                                {bitAnalysis.block0.bits.valid ? '✓' : '❌'}</div>
+                              <div>區塊1: C1C2C3 = {bitAnalysis.block1.bits.c1}{bitAnalysis.block1.bits.c2}{bitAnalysis.block1.bits.c3} 
+                                {bitAnalysis.block1.bits.valid ? '✓' : '❌'}</div>
+                              <div>區塊2: C1C2C3 = {bitAnalysis.block2.bits.c1}{bitAnalysis.block2.bits.c2}{bitAnalysis.block2.bits.c3} 
+                                {bitAnalysis.block2.bits.valid ? '✓' : '❌'}</div>
+                              <div>尾塊: C1C2C3 = {bitAnalysis.trailer.bits.c1}{bitAnalysis.trailer.bits.c2}{bitAnalysis.trailer.bits.c3} 
+                                {bitAnalysis.trailer.bits.valid ? '✓' : '❌'}</div>
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              原始位元組: 0x{effectiveAccessBits.substr(0,2)}, 0x{effectiveAccessBits.substr(2,2)}, 0x{effectiveAccessBits.substr(4,2)}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
