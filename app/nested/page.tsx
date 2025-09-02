@@ -19,83 +19,83 @@ interface NestedStep {
 const nestedSteps: NestedStep[] = [
   {
     id: 1,
-    title: "建立初始認證",
-    description: "攻擊者使用已知金鑰進行合法認證",
-    phase: "準備階段",
-    attackerAction: "AUTH: 60 04 (已知金鑰)",
-    cardResponse: "認證成功，建立安全通道",
-    vulnerability: "需要至少一個已知金鑰作為攻擊起點",
-    details: "Nested Attack 的前提是攻擊者已經獲得至少一個扇區的金鑰（通常是預設金鑰 FFFFFFFFFFFF 或弱金鑰）。攻擊者使用此金鑰與卡片建立合法的認證連接。",
+    title: "檢測卡片類型",
+    description: "Proxmark3 檢測卡片並確認為 Mifare Classic",
+    phase: "初始化",
+    attackerAction: "hf 14a info",
+    cardResponse: "ATQA: 0004, SAK: 08 (1K)",
+    vulnerability: "卡片身份公開可見",
+    details: "使用 Proxmark3 的 'hf 14a info' 命令檢測卡片類型。系統會顯示 ATQA (Answer To reQuest A) 和 SAK (Select AcKnowledge) 資訊，確認這是一張 Mifare Classic 1K 卡片，具有 16 個扇區。",
   },
   {
     id: 2,
-    title: "發起嵌套認證",
-    description: "在已認證狀態下，對目標扇區發起新的認證請求",
-    phase: "攻擊階段",
-    attackerAction: "AUTH: 60 08 (目標扇區)",
-    cardResponse: "nT: A5B6C7D8 (明文)",
-    vulnerability: "Crypto-1 在嵌套認證時的 PRNG 狀態可預測",
-    details: "關鍵漏洞：在已建立的安全通道內發起新的認證時，卡片的 PRNG 狀態是可預測的。新的 nT 值雖然看似隨機，但實際上與當前的 Crypto-1 LFSR 狀態有關聯性。",
+    title: "測試預設金鑰",
+    description: "嘗試使用常見的預設金鑰進行驗證",
+    phase: "金鑰探測",
+    attackerAction: "hf mf chk --1k",
+    cardResponse: "Found Key A: FFFFFFFFFFFF",
+    vulnerability: "使用預設金鑰或弱金鑰",
+    details: "Proxmark3 的 'hf mf chk' 命令會測試常見的預設金鑰，如 FFFFFFFFFFFF、A0A1A2A3A4A5、D3F7D3F7D3F7 等。通常至少會找到一個可用的金鑰，這是 Nested Attack 的必要條件。",
   },
   {
     id: 3,
-    title: "收集認證序列",
-    description: "重複嵌套認證過程，收集多組 nT 值",
-    phase: "數據收集",
-    attackerAction: "重複 AUTH 命令",
-    cardResponse: "nT₁, nT₂, nT₃... (序列)",
-    vulnerability: "PRNG 的線性特性暴露內部狀態",
-    details: "攻擊者收集大量的 nT 值序列。由於 Mifare Classic 使用的是 16-bit LFSR 作為 PRNG，其輸出具有線性關係。通過分析這些序列，可以推導出 LFSR 的內部狀態和反饋函數。",
+    title: "執行 Nested Attack",
+    description: "使用已知金鑰對其他扇區執行 nested 攻擊",
+    phase: "主要攻擊",
+    attackerAction: "hf mf nested --1k --blk 0 -a -k FFFFFFFFFFFF",
+    cardResponse: "Collecting nonces...",
+    vulnerability: "Crypto-1 PRNG 的可預測性",
+    details: "核心命令 'hf mf nested'。使用已知的扇區 0 Key A (FFFFFFFFFFFF) 作為攻擊起點。Proxmark3 會對每個目標扇區執行嵌套認證，收集加密的 nonce 數據。每次認證都會生成新的挑戰-回應對。",
   },
   {
     id: 4,
-    title: "nT 預測分析",
-    description: "分析 nT 序列的模式，建立預測模型",
-    phase: "分析階段", 
-    attackerAction: "分析 PRNG 狀態轉換",
-    cardResponse: "LFSR 狀態: S₁→S₂→S₃",
-    vulnerability: "16-bit LFSR 的狀態空間過小",
-    details: "通過分析收集到的 nT 序列，攻擊者可以重建 PRNG 的狀態轉換圖。16-bit LFSR 只有 65536 個可能狀態，可以通過數學分析或暴力搜索確定當前狀態。",
+    title: "收集加密 Nonces",
+    description: "從每個目標扇區收集加密的挑戰回應",
+    phase: "數據採集",
+    attackerAction: "Target sector: 4, nonces: 500",
+    cardResponse: "Encrypted nT: 0x12345678",
+    vulnerability: "加密通道中的 nonce 洩漏資訊",
+    details: "對每個扇區，Proxmark3 會收集約 500-1000 個加密的 nonce。這些 nonce 是在已建立的加密通道中傳輸的，但它們的產生模式仍然暴露了 PRNG 的內部狀態資訊。",
   },
   {
     id: 5,
-    title: "Crypto-1 狀態恢復",
-    description: "利用已知的 nT 值反推 Crypto-1 的內部狀態",
-    phase: "狀態恢復",
-    attackerAction: "計算 LFSR 反向狀態",
-    cardResponse: "Crypto-1 狀態已知",
-    vulnerability: "認證過程中 LFSR 狀態與 nT 的關聯性",
-    details: "一旦能夠預測 nT，攻擊者就可以模擬正常的認證過程。通過已知的 nT 值和認證協定的數學關係，可以反推出發送 nT 時的 Crypto-1 LFSR 狀態。",
+    title: "分析 PRNG 狀態",
+    description: "分析收集的數據以重建 PRNG 內部狀態",
+    phase: "密碼分析",
+    attackerAction: "分析 nonce 序列模式",
+    cardResponse: "LFSR 狀態推導中...",
+    vulnerability: "16-bit LFSR 的有限狀態空間",
+    details: "Proxmark3 內建的密碼分析演算法會分析收集到的 nonce 序列。由於 Mifare Classic 的 PRNG 基於 16-bit LFSR，只有 65536 個可能狀態，這使得狀態重建在計算上是可行的。",
   },
   {
     id: 6,
-    title: "金鑰空間縮減",
-    description: "利用已知狀態大幅縮減金鑰搜索空間",
-    phase: "優化階段",
-    attackerAction: "計算可能金鑰範圍",
-    cardResponse: "48-bit → ~20-bit 搜索空間",
-    vulnerability: "Crypto-1 初始化過程的可逆性",
-    details: "知道特定時刻的 LFSR 狀態後，可以反推初始化時使用的金鑰。由於 Crypto-1 的初始化是確定性的，大部分金鑰位可以直接計算得出，只需要暴力搜索剩餘的少數位。",
+    title: "計算金鑰候選",
+    description: "基於推導的狀態計算可能的金鑰",
+    phase: "金鑰推導",
+    attackerAction: "生成金鑰候選列表",
+    cardResponse: "候選金鑰: 2^20 個",
+    vulnerability: "Crypto-1 初始化的數學弱點",
+    details: "利用重建的 PRNG 狀態和 Crypto-1 演算法的已知弱點，Proxmark3 可以將 48-bit 的金鑰空間縮減到約 2^20 個候選。這是通過逆向 Crypto-1 的金鑰排程演算法實現的。",
   },
   {
     id: 7,
-    title: "目標金鑰破解",
-    description: "對縮減後的金鑰空間進行暴力搜索",
-    phase: "破解階段",
-    attackerAction: "暴力搜索剩餘金鑰位",
-    cardResponse: "金鑰驗證成功",
-    vulnerability: "縮減後的搜索空間可在短時間內破解",
-    details: "由於搜索空間已大幅縮減（從 2⁴⁸ 減少到約 2²⁰），即使使用普通硬體也能在短時間內（通常幾分鐘到幾小時）完成暴力搜索，成功恢復目標扇區的金鑰。",
+    title: "暴力搜索驗證",
+    description: "測試金鑰候選直到找到正確金鑰",
+    phase: "驗證階段",
+    attackerAction: "Testing key candidates...",
+    cardResponse: "Found Key: A1B2C3D4E5F6",
+    vulnerability: "縮減的搜索空間可快速窮舉",
+    details: "Proxmark3 會自動測試所有金鑰候選。由於搜索空間已大幅縮減，這個過程通常在幾分鐘內完成。每個候選金鑰都會通過實際的認證測試來驗證其正確性。",
   },
   {
     id: 8,
-    title: "攻擊完成",
-    description: "成功獲取目標扇區金鑰，可進行讀寫操作",
-    phase: "完成階段",
-    attackerAction: "使用破解的金鑰存取",
-    cardResponse: "完全存取權限",
-    vulnerability: "整個扇區的安全性被完全破壞",
-    details: "攻擊成功後，攻擊者獲得目標扇區的完整存取權限。可以重複此過程攻擊其他扇區，直到獲取整張卡片的控制權。這種攻擊的成功率很高，且只需要一個已知金鑰作為起點。",
+    title: "輸出完整金鑰",
+    description: "顯示所有成功破解的扇區金鑰",
+    phase: "結果輸出",
+    attackerAction: "hf mf nested --1k --dump",
+    cardResponse: "All keys found: 16 sectors",
+    vulnerability: "整張卡片的安全性被完全破壞",
+    details: "攻擊完成後，Proxmark3 會顯示所有扇區的 Key A 和 Key B。使用 '--dump' 參數可以將結果保存到檔案。此時攻擊者擁有卡片的完整控制權，可以讀寫任意扇區的數據。",
   },
 ];
 
@@ -146,8 +146,9 @@ export default function NestedAttackPage() {
               <ArrowLeft size={24} />
             </Link>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-              Nested Attack 分析
+              Nested Attack 實戰分析
             </h1>
+            <p className="text-slate-400 text-sm mt-2">基於 Proxmark3 Iceman 版本的實際攻擊流程</p>
           </div>
           
           <div className="flex items-center gap-2">
@@ -213,7 +214,7 @@ export default function NestedAttackPage() {
                     >
                       <Target size={32} className="text-white" />
                     </motion.div>
-                    <p className="text-sm text-slate-400">攻擊者 (Attacker)</p>
+                    <p className="text-sm text-slate-400">攻擊者 (Proxmark3)</p>
                   </div>
 
                   {/* 攻擊流程動畫 */}
