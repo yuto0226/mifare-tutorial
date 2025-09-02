@@ -36,28 +36,28 @@ interface MemoryBlock {
 // 解析 Value Block 格式
 const parseValueBlock = (data: string) => {
   if (data.length !== 32) return null;
-  
+
   // 將十六進制字符串轉換為字節數組
   const bytes = data.match(/.{2}/g)?.map(hex => parseInt(hex, 16)) || [];
   if (bytes.length !== 16) return null;
-  
+
   // 讀取 4 字節的值 (Little Endian) - 確保使用無符號 32 位元
   const value = ((bytes[0] + (bytes[1] << 8) + (bytes[2] << 16) + (bytes[3] << 24)) >>> 0);
   const valueInverted = ((bytes[4] + (bytes[5] << 8) + (bytes[6] << 16) + (bytes[7] << 24)) >>> 0);
   const valueBackup = ((bytes[8] + (bytes[9] << 8) + (bytes[10] << 16) + (bytes[11] << 24)) >>> 0);
-  
+
   // 讀取地址字節
   const addr = bytes[12];
   const addrInverted = bytes[13];
   const addrBackup = bytes[14];
   const addrInvertedBackup = bytes[15];
-  
+
   // 驗證格式 - 使用無符號 32 位元運算
   const valueValid = ((value ^ valueInverted) >>> 0) === 0xFFFFFFFF;
   const valueBackupValid = value === valueBackup;
   const addrValid = (addr ^ addrInverted) === 0xFF;
   const addrBackupValid = addr === addrBackup && addrInverted === addrInvertedBackup;
-  
+
   return {
     value,
     valueInverted,
@@ -83,7 +83,7 @@ const createValueBlock = (value: number, address: number = 0x06) => {
   const valInverted = ((~val) >>> 0);
   const addr = address & 0xFF;
   const addrInverted = (~addr) & 0xFF;
-  
+
   // 將 32 位元值轉換為 Little Endian 格式的 4 個位元組
   const valueBytes = [
     val & 0xFF,
@@ -91,14 +91,14 @@ const createValueBlock = (value: number, address: number = 0x06) => {
     (val >> 16) & 0xFF,
     (val >> 24) & 0xFF
   ];
-  
+
   const valueInvertedBytes = [
     valInverted & 0xFF,
     (valInverted >> 8) & 0xFF,
     (valInverted >> 16) & 0xFF,
     (valInverted >> 24) & 0xFF
   ];
-  
+
   // 組合成完整的 16 位元組格式
   const blockData = [
     ...valueBytes,        // 0-3: 值
@@ -109,7 +109,7 @@ const createValueBlock = (value: number, address: number = 0x06) => {
     addr,                 // 14: 地址的備份
     addrInverted          // 15: 地址反轉的備份
   ];
-  
+
   // 轉換為十六進制字串
   return blockData.map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
 };
@@ -120,33 +120,33 @@ const generateOfficialAccessBits = (c1c2c3: string): string => {
   if (!/^[01]{3}$/.test(c1c2c3)) {
     throw new Error(`無效的 C1C2C3 值: ${c1c2c3}`);
   }
-  
+
   const c1 = parseInt(c1c2c3[0]);
-  const c2 = parseInt(c1c2c3[1]); 
+  const c2 = parseInt(c1c2c3[1]);
   const c3 = parseInt(c1c2c3[2]);
-  
+
   // 計算反轉位元
   const notC1 = 1 - c1;
   const notC2 = 1 - c2;
   const notC3 = 1 - c3;
-  
+
   // 對於每個區塊（0,1,2,3），這裡示範所有區塊使用相同的 C1C2C3
   // Byte 6: !C2_3,!C2_2,!C2_1,!C2_0,!C1_3,!C1_2,!C1_1,!C1_0
   const byte6 = (notC2 << 7) | (notC2 << 6) | (notC2 << 5) | (notC2 << 4) |
-                (notC1 << 3) | (notC1 << 2) | (notC1 << 1) | (notC1 << 0);
-  
+    (notC1 << 3) | (notC1 << 2) | (notC1 << 1) | (notC1 << 0);
+
   // Byte 7: C1_3,C1_2,C1_1,C1_0,!C3_3,!C3_2,!C3_1,!C3_0
   const byte7 = (c1 << 7) | (c1 << 6) | (c1 << 5) | (c1 << 4) |
-                (notC3 << 3) | (notC3 << 2) | (notC3 << 1) | (notC3 << 0);
-  
+    (notC3 << 3) | (notC3 << 2) | (notC3 << 1) | (notC3 << 0);
+
   // Byte 8: C3_3,C3_2,C3_1,C3_0,C2_3,C2_2,C2_1,C2_0  
   const byte8 = (c3 << 7) | (c3 << 6) | (c3 << 5) | (c3 << 4) |
-                (c2 << 3) | (c2 << 2) | (c2 << 1) | (c2 << 0);
-  
+    (c2 << 3) | (c2 << 2) | (c2 << 1) | (c2 << 0);
+
   // 轉換為十六進制字符串
   return byte6.toString(16).padStart(2, '0').toUpperCase() +
-         byte7.toString(16).padStart(2, '0').toUpperCase() +
-         byte8.toString(16).padStart(2, '0').toUpperCase();
+    byte7.toString(16).padStart(2, '0').toUpperCase() +
+    byte8.toString(16).padStart(2, '0').toUpperCase();
 };
 
 // 根據四個區塊的個別權限設定生成 access bits
@@ -158,7 +158,7 @@ const generateAccessBitsByBlocks = (block0: number, block1: number, block2: numb
       throw new Error(`區塊 ${i} 的權限值必須是 0-7 的整數，收到: ${blocks[i]}`);
     }
   }
-  
+
   // 將 0-7 的值轉換為 3 位二進制 (C1C2C3)
   const toBinary = (value: number): { c1: number, c2: number, c3: number } => {
     return {
@@ -167,45 +167,45 @@ const generateAccessBitsByBlocks = (block0: number, block1: number, block2: numb
       c3: value & 1          // 最低位
     };
   };
-  
+
   const block0Bits = toBinary(block0);
   const block1Bits = toBinary(block1);
   const block2Bits = toBinary(block2);
   const block3Bits = toBinary(block3);
-  
+
   // 計算反轉位元
   const notC1_0 = 1 - block0Bits.c1;
   const notC1_1 = 1 - block1Bits.c1;
   const notC1_2 = 1 - block2Bits.c1;
   const notC1_3 = 1 - block3Bits.c1;
-  
+
   const notC2_0 = 1 - block0Bits.c2;
   const notC2_1 = 1 - block1Bits.c2;
   const notC2_2 = 1 - block2Bits.c2;
   const notC2_3 = 1 - block3Bits.c2;
-  
+
   const notC3_0 = 1 - block0Bits.c3;
   const notC3_1 = 1 - block1Bits.c3;
   const notC3_2 = 1 - block2Bits.c3;
   const notC3_3 = 1 - block3Bits.c3;
-  
+
   // 根據 Mifare Classic 規格構建位元組
   // Byte 6: !C2_3,!C2_2,!C2_1,!C2_0,!C1_3,!C1_2,!C1_1,!C1_0
   const byte6 = (notC2_3 << 7) | (notC2_2 << 6) | (notC2_1 << 5) | (notC2_0 << 4) |
-                (notC1_3 << 3) | (notC1_2 << 2) | (notC1_1 << 1) | (notC1_0 << 0);
-  
+    (notC1_3 << 3) | (notC1_2 << 2) | (notC1_1 << 1) | (notC1_0 << 0);
+
   // Byte 7: C1_3,C1_2,C1_1,C1_0,!C3_3,!C3_2,!C3_1,!C3_0
   const byte7 = (block3Bits.c1 << 7) | (block2Bits.c1 << 6) | (block1Bits.c1 << 5) | (block0Bits.c1 << 4) |
-                (notC3_3 << 3) | (notC3_2 << 2) | (notC3_1 << 1) | (notC3_0 << 0);
-  
+    (notC3_3 << 3) | (notC3_2 << 2) | (notC3_1 << 1) | (notC3_0 << 0);
+
   // Byte 8: C3_3,C3_2,C3_1,C3_0,C2_3,C2_2,C2_1,C2_0
   const byte8 = (block3Bits.c3 << 7) | (block2Bits.c3 << 6) | (block1Bits.c3 << 5) | (block0Bits.c3 << 4) |
-                (block3Bits.c2 << 3) | (block2Bits.c2 << 2) | (block1Bits.c2 << 1) | (block0Bits.c2 << 0);
-  
+    (block3Bits.c2 << 3) | (block2Bits.c2 << 2) | (block1Bits.c2 << 1) | (block0Bits.c2 << 0);
+
   // 轉換為十六進制字符串
   return byte6.toString(16).padStart(2, '0').toUpperCase() +
-         byte7.toString(16).padStart(2, '0').toUpperCase() +
-         byte8.toString(16).padStart(2, '0').toUpperCase();
+    byte7.toString(16).padStart(2, '0').toUpperCase() +
+    byte8.toString(16).padStart(2, '0').toUpperCase();
 };
 
 // 模擬 Mifare Classic 1K 的記憶體佈局 - 多元化存取位元配置
@@ -459,7 +459,7 @@ const memoryData: MemoryBlock[] = [
     keyB: "161718191A1B",
     accessBits: generateAccessBitsByBlocks(7, 7, 7, 7)
   },
-  
+
   // 扇區 8 - 混合值區塊配置
   (() => {
     const valueData = createValueBlock(750, 0x20);
@@ -524,7 +524,7 @@ const memoryData: MemoryBlock[] = [
     keyB: "363738393A3B",
     accessBits: generateAccessBitsByBlocks(0, 1, 6, 3)
   },
-  
+
   // 扇區 10-15 - 多樣化權限展示
   // 扇區 10 - 全公開配置
   {
@@ -554,7 +554,7 @@ const memoryData: MemoryBlock[] = [
     keyB: "464748494A4B",
     accessBits: generateAccessBitsByBlocks(0, 0, 0, 0)
   },
-  
+
   // 扇區 11 - 漸進式只讀配置
   {
     block: 44, sector: 11, address: 0x2C,
@@ -583,7 +583,7 @@ const memoryData: MemoryBlock[] = [
     keyB: "565758595A5B",
     accessBits: generateAccessBitsByBlocks(2, 4, 5, 4)
   },
-  
+
   // 扇區 12-15 預設配置 (簡化)
   {
     block: 48, sector: 12, address: 0x30,
@@ -612,7 +612,7 @@ const memoryData: MemoryBlock[] = [
     keyB: "FFFFFFFFFFFF",
     accessBits: generateAccessBitsByBlocks(0, 0, 0, 0)
   },
-  
+
   // 扇區 13 - 完全鎖定範例
   {
     block: 52, sector: 13, address: 0x34,
@@ -641,7 +641,7 @@ const memoryData: MemoryBlock[] = [
     keyB: "767778797A7B",
     accessBits: generateAccessBitsByBlocks(7, 7, 7, 7)
   },
-  
+
   // 扇區 14-15 - 基本範例
   {
     block: 56, sector: 14, address: 0x38,
@@ -745,21 +745,21 @@ const getByteHighlight = (block: MemoryBlock, byteIndex: number): HighlightType 
     if (byteIndex >= 6 && byteIndex <= 7) return 'atqa';
     return 'manufacturer_data';
   }
-  
+
   if (block.type === 'trailer') {
     if (byteIndex >= 0 && byteIndex <= 5) return 'key_a';
     if (byteIndex >= 6 && byteIndex <= 8) return 'access_bits';
     if (byteIndex === 9) return 'normal';
     if (byteIndex >= 10 && byteIndex <= 15) return 'key_b';
   }
-  
+
   if (block.type === 'value') {
     if (byteIndex >= 0 && byteIndex < 4) return 'value';
     if (byteIndex >= 4 && byteIndex < 8) return 'value_inverted';
     if (byteIndex >= 8 && byteIndex < 12) return 'value';
     return 'address_backup';
   }
-  
+
   return 'normal';
 };
 
@@ -771,21 +771,21 @@ const getDataGroupRange = (block: MemoryBlock, byteIndex: number): { start: numb
     if (byteIndex >= 6 && byteIndex <= 7) return { start: 6, end: 7, type: 'atqa' };
     return { start: 8, end: 15, type: 'manufacturer_data' };
   }
-  
+
   if (block.type === 'trailer') {
     if (byteIndex >= 0 && byteIndex <= 5) return { start: 0, end: 5, type: 'key_a' };
     if (byteIndex >= 6 && byteIndex <= 8) return { start: 6, end: 8, type: 'access_bits' };
     if (byteIndex === 9) return { start: 9, end: 9, type: 'normal' };
     if (byteIndex >= 10 && byteIndex <= 15) return { start: 10, end: 15, type: 'key_b' };
   }
-  
+
   if (block.type === 'value') {
     if (byteIndex >= 0 && byteIndex < 4) return { start: 0, end: 3, type: 'value' };
     if (byteIndex >= 4 && byteIndex < 8) return { start: 4, end: 7, type: 'value_inverted' };
     if (byteIndex >= 8 && byteIndex < 12) return { start: 8, end: 11, type: 'value_inverted' };
     return { start: 12, end: 15, type: 'address_backup' };
   }
-  
+
   return { start: 0, end: 15, type: 'normal' };
 };
 
@@ -795,28 +795,28 @@ const validateAccessBits = (accessBits: string) => {
   if (!accessBits || accessBits.length !== 6) {
     return { valid: false, error: '存取位元必須是6位十六進制字符' };
   }
-  
+
   // 檢查是否為有效十六進制
   if (!/^[0-9A-Fa-f]{6}$/.test(accessBits)) {
     return { valid: false, error: '存取位元包含無效的十六進制字符' };
   }
-  
+
   const hex = accessBits.toUpperCase();
   const byte6 = parseInt(hex.substr(0, 2), 16);
   const byte7 = parseInt(hex.substr(2, 2), 16);
   const byte8 = parseInt(hex.substr(4, 2), 16);
-  
+
   // 檢查反轉位元的一致性
   const errors: string[] = [];
   for (let blockNum = 0; blockNum < 4; blockNum++) {
     const c1 = (byte7 >> (4 + blockNum)) & 1;
     const c2 = (byte8 >> blockNum) & 1;
     const c3 = (byte8 >> (4 + blockNum)) & 1;
-    
+
     const notC1 = (byte6 >> blockNum) & 1;
     const notC2 = (byte6 >> (4 + blockNum)) & 1;
     const notC3 = (byte7 >> blockNum) & 1;
-    
+
     if (c1 !== (1 - notC1)) {
       errors.push(`區塊${blockNum}: C1位元不一致`);
     }
@@ -827,11 +827,11 @@ const validateAccessBits = (accessBits: string) => {
       errors.push(`區塊${blockNum}: C3位元不一致`);
     }
   }
-  
+
   if (errors.length > 0) {
     return { valid: false, error: errors.join(', '), details: errors };
   }
-  
+
   return { valid: true };
 };
 
@@ -891,7 +891,7 @@ const SECTOR_TRAILER_ACCESS_CONDITIONS = {
 const DATA_BLOCK_ACCESS_CONDITIONS = {
   '000': {
     read: 'Key A|Key B',
-    write: 'Key A|Key B', 
+    write: 'Key A|Key B',
     increment: 'Key A|Key B',
     decrement: 'Key A|Key B',
     description: '完全開放，雙金鑰均可存取'
@@ -899,7 +899,7 @@ const DATA_BLOCK_ACCESS_CONDITIONS = {
   '001': {
     read: 'Key A|Key B',
     write: '禁止',
-    increment: '禁止', 
+    increment: '禁止',
     decrement: 'Key A|Key B',
     description: '讀寫分離，僅允許減值'
   },
@@ -914,7 +914,7 @@ const DATA_BLOCK_ACCESS_CONDITIONS = {
     read: 'Key B',
     write: 'Key B',
     increment: '禁止',
-    decrement: '禁止', 
+    decrement: '禁止',
     description: '僅 Key B 可讀寫'
   },
   '100': {
@@ -927,7 +927,7 @@ const DATA_BLOCK_ACCESS_CONDITIONS = {
   '101': {
     read: 'Key B',
     write: '禁止',
-    increment: '禁止', 
+    increment: '禁止',
     decrement: '禁止',
     description: '僅 Key B 可讀'
   },
@@ -940,7 +940,7 @@ const DATA_BLOCK_ACCESS_CONDITIONS = {
   },
   '111': {
     read: '禁止',
-    write: '禁止', 
+    write: '禁止',
     increment: '禁止',
     decrement: '禁止',
     description: '完全禁止'
@@ -959,7 +959,7 @@ const generateValidAccessBits = (mode: string = 'default') => {
     'fully_locked': generateOfficialAccessBits('110'), // 110 模式 - 完全鎖定
     'permanent_lock': generateOfficialAccessBits('111') // 111 模式 - 完全鎖定
   };
-  
+
   return modes[mode] || modes['default'];
 };
 
@@ -980,7 +980,7 @@ const createAccessBitsFromPermissions = (
   trailer: { c1: number, c2: number, c3: number }
 ) => {
   // 構建 byte6: !C2_3,!C2_2,!C2_1,!C2_0,!C1_3,!C1_2,!C1_1,!C1_0
-  const byte6 = 
+  const byte6 =
     ((1 - trailer.c2) << 7) |
     ((1 - block2.c2) << 6) |
     ((1 - block1.c2) << 5) |
@@ -989,9 +989,9 @@ const createAccessBitsFromPermissions = (
     ((1 - block2.c1) << 2) |
     ((1 - block1.c1) << 1) |
     (1 - block0.c1);
-  
+
   // 構建 byte7: C1_3,C1_2,C1_1,C1_0,!C3_3,!C3_2,!C3_1,!C3_0
-  const byte7 = 
+  const byte7 =
     (trailer.c1 << 7) |
     (block2.c1 << 6) |
     (block1.c1 << 5) |
@@ -1000,9 +1000,9 @@ const createAccessBitsFromPermissions = (
     ((1 - block2.c3) << 2) |
     ((1 - block1.c3) << 1) |
     (1 - block0.c3);
-  
+
   // 構建 byte8: C3_3,C3_2,C3_1,C3_0,C2_3,C2_2,C2_1,C2_0
-  const byte8 = 
+  const byte8 =
     (trailer.c3 << 7) |
     (block2.c3 << 6) |
     (block1.c3 << 5) |
@@ -1011,10 +1011,10 @@ const createAccessBitsFromPermissions = (
     (block2.c2 << 2) |
     (block1.c2 << 1) |
     block0.c2;
-  
+
   return byte6.toString(16).padStart(2, '0').toUpperCase() +
-         byte7.toString(16).padStart(2, '0').toUpperCase() +
-         byte8.toString(16).padStart(2, '0').toUpperCase();
+    byte7.toString(16).padStart(2, '0').toUpperCase() +
+    byte8.toString(16).padStart(2, '0').toUpperCase();
 };
 
 // 真正的存取位元位元級解析（按照 Mifare Classic 規範）
@@ -1028,38 +1028,38 @@ const parseAccessBitsByBlock = (accessBits: string) => {
     console.warn(`已自動修復為預設模式: ${fixedAccessBits}`);
     accessBits = fixedAccessBits;
   }
-  
+
   // 確保是6位十六進制字符串（3個位元組）
   const hex = accessBits.padStart(6, '0');
-  
+
   // 將十六進制轉換為3個位元組
   const byte6 = parseInt(hex.substr(0, 2), 16);
   const byte7 = parseInt(hex.substr(2, 2), 16);
   const byte8 = parseInt(hex.substr(4, 2), 16);
-  
+
   // 根據 Mifare Classic 規格解析位元
   // Byte 6: !C2_3,!C2_2,!C2_1,!C2_0,!C1_3,!C1_2,!C1_1,!C1_0
   // Byte 7: C1_3,C1_2,C1_1,C1_0,!C3_3,!C3_2,!C3_1,!C3_0  
   // Byte 8: C3_3,C3_2,C3_1,C3_0,C2_3,C2_2,C2_1,C2_0
-  
+
   const extractBlockBits = (blockNum: number) => {
     // 提取每個區塊的 C1, C2, C3 位元
     const c1 = (byte7 >> (4 + blockNum)) & 1;  // C1 位元在 byte7 的高4位
     const c2 = (byte8 >> blockNum) & 1;        // C2 位元在 byte8 的低4位
     const c3 = (byte8 >> (4 + blockNum)) & 1;  // C3 位元在 byte8 的高4位
-    
+
     // 驗證：檢查反轉位元是否正確
     const notC1 = (byte6 >> blockNum) & 1;     // !C1 位元在 byte6 的低4位
     const notC2 = (byte6 >> (4 + blockNum)) & 1; // !C2 位元在 byte6 的高4位
     const notC3 = (byte7 >> blockNum) & 1;     // !C3 位元在 byte7 的低4位
-    
+
     // 檢查位元一致性
     const c1Valid = c1 === (1 - notC1);
     const c2Valid = c2 === (1 - notC2);
     const c3Valid = c3 === (1 - notC3);
-    
-    return { 
-      c1, c2, c3, 
+
+    return {
+      c1, c2, c3,
       value: c1 * 4 + c2 * 2 + c3,
       valid: c1Valid && c2Valid && c3Valid,
       debug: {
@@ -1069,11 +1069,11 @@ const parseAccessBitsByBlock = (accessBits: string) => {
       }
     };
   };
-  
+
   // 根據C1C2C3值確定權限 - 使用官方 Mifare Classic 表格
   const getPermissionsByBits = (c1: number, c2: number, c3: number, isTrailer: boolean = false) => {
     const binaryString = `${c1}${c2}${c3}`;
-    
+
     if (isTrailer) {
       // 使用官方 Table 7: Sector Trailer 存取條件
       const condition = SECTOR_TRAILER_ACCESS_CONDITIONS[binaryString as keyof typeof SECTOR_TRAILER_ACCESS_CONDITIONS];
@@ -1100,29 +1100,29 @@ const parseAccessBitsByBlock = (accessBits: string) => {
         };
       }
     }
-    
+
     // 如果找不到對應的條件，返回錯誤
-    return isTrailer 
-      ? { 
-          keyA: { read: '錯誤', write: '錯誤' },
-          accessBits: { read: '錯誤', write: '錯誤' },
-          keyB: { read: '錯誤', write: '錯誤' },
-          description: `未知的存取條件: ${binaryString}`,
-          binaryValue: binaryString
-        }
-      : { 
-          read: '錯誤', write: '錯誤', increment: '錯誤', decrement: '錯誤',
-          description: `未知的存取條件: ${binaryString}`,
-          binaryValue: binaryString
-        };
+    return isTrailer
+      ? {
+        keyA: { read: '錯誤', write: '錯誤' },
+        accessBits: { read: '錯誤', write: '錯誤' },
+        keyB: { read: '錯誤', write: '錯誤' },
+        description: `未知的存取條件: ${binaryString}`,
+        binaryValue: binaryString
+      }
+      : {
+        read: '錯誤', write: '錯誤', increment: '錯誤', decrement: '錯誤',
+        description: `未知的存取條件: ${binaryString}`,
+        binaryValue: binaryString
+      };
   };
-  
+
   // 解析每個區塊
   const block0Bits = extractBlockBits(0);
   const block1Bits = extractBlockBits(1);
   const block2Bits = extractBlockBits(2);
   const trailerBits = extractBlockBits(3);
-  
+
   return {
     rawBytes: { byte6, byte7, byte8 },
     block0: {
@@ -1153,20 +1153,20 @@ const parseAccessBits = (accessBits: string) => {
     // 如果格式無效，使用預設模式
     accessBits = generateValidAccessBits('default');
   }
-  
+
   // 基於官方存取條件表格生成模式描述
   const getAccessModeDescription = (accessBits: string) => {
     // 使用 parseAccessBitsByBlock 來取得官方的權限分析
     const bitAnalysis = parseAccessBitsByBlock(accessBits);
-    
+
     // 取得尾塊的 C1C2C3 值
     const trailerBits = bitAnalysis.trailer.bits;
     const c1c2c3 = `${trailerBits.c1}${trailerBits.c2}${trailerBits.c3}`;
-    
+
     // 取得資料區塊的權限描述（使用第一個資料區塊作為代表）
     const dataBlockPermissions = bitAnalysis.block0.permissions;
     const trailerPermissions = bitAnalysis.trailer.permissions;
-    
+
     // 基於 C1C2C3 組合決定模式名稱和顏色
     const modeInfo = (() => {
       switch (c1c2c3) {
@@ -1226,12 +1226,12 @@ const parseAccessBits = (accessBits: string) => {
           };
       }
     })();
-    
+
     // 生成描述文字
     const description = trailerPermissions.description || '存取條件配置';
     const dataBlocks = dataBlockPermissions.description || '資料區塊權限';
     const trailer = trailerPermissions.description || '尾塊權限';
-    
+
     return {
       mode: modeInfo.mode,
       description: description,
@@ -1245,17 +1245,184 @@ const parseAccessBits = (accessBits: string) => {
   return getAccessModeDescription(accessBits);
 };
 
+// 解析特定區塊的存取模式
+const parseBlockAccessMode = (accessBits: string, blockInSector: number) => {
+  // 首先驗證格式
+  const validation = validateAccessBits(accessBits);
+  if (!validation.valid) {
+    accessBits = generateValidAccessBits('default');
+  }
+
+  const bitAnalysis = parseAccessBitsByBlock(accessBits);
+  let currentBlockData;
+  
+  if (blockInSector === 0) {
+    currentBlockData = bitAnalysis.block0;
+  } else if (blockInSector === 1) {
+    currentBlockData = bitAnalysis.block1;
+  } else if (blockInSector === 2) {
+    currentBlockData = bitAnalysis.block2;
+  } else {
+    // 扇區尾塊
+    currentBlockData = bitAnalysis.trailer;
+  }
+
+  if (!currentBlockData) {
+    return {
+      mode: '未知模式',
+      description: '無法解析區塊存取模式',
+      color: 'text-red-400',
+      bgColor: 'bg-red-900/30'
+    };
+  }
+
+  const c1c2c3 = `${currentBlockData.bits.c1}${currentBlockData.bits.c2}${currentBlockData.bits.c3}`;
+  
+  // 根據區塊類型和 C1C2C3 值決定模式名稱和顏色
+  const isTrailer = blockInSector === 3;
+  
+  if (isTrailer) {
+    // 尾塊模式
+    switch (c1c2c3) {
+      case '000':
+        return {
+          mode: '預設尾塊模式 (000)',
+          description: currentBlockData.permissions.description,
+          color: 'text-green-400',
+          bgColor: 'bg-green-900/30'
+        };
+      case '001':
+        return {
+          mode: '金鑰A控制模式 (001)',
+          description: currentBlockData.permissions.description,
+          color: 'text-blue-400',
+          bgColor: 'bg-blue-900/30'
+        };
+      case '010':
+        return {
+          mode: '只讀尾塊模式 (010)',
+          description: currentBlockData.permissions.description,
+          color: 'text-red-400',
+          bgColor: 'bg-red-900/30'
+        };
+      case '011':
+        return {
+          mode: '金鑰B寫入模式 (011)',
+          description: currentBlockData.permissions.description,
+          color: 'text-purple-400',
+          bgColor: 'bg-purple-900/30'
+        };
+      case '100':
+        return {
+          mode: '金鑰B控制模式 (100)',
+          description: currentBlockData.permissions.description,
+          color: 'text-orange-400',
+          bgColor: 'bg-orange-900/30'
+        };
+      case '101':
+        return {
+          mode: '鎖定金鑰模式 (101)',
+          description: currentBlockData.permissions.description,
+          color: 'text-yellow-400',
+          bgColor: 'bg-yellow-900/30'
+        };
+      case '110':
+      case '111':
+        return {
+          mode: '完全鎖定模式 (110/111)',
+          description: currentBlockData.permissions.description,
+          color: 'text-gray-400',
+          bgColor: 'bg-gray-900/30'
+        };
+      default:
+        return {
+          mode: '自定義尾塊模式',
+          description: currentBlockData.permissions.description,
+          color: 'text-slate-400',
+          bgColor: 'bg-slate-900/30'
+        };
+    }
+  } else {
+    // 資料區塊模式
+    switch (c1c2c3) {
+      case '000':
+        return {
+          mode: '完全開放模式 (000)',
+          description: currentBlockData.permissions.description,
+          color: 'text-green-400',
+          bgColor: 'bg-green-900/30'
+        };
+      case '001':
+        return {
+          mode: '金鑰B控制模式 (001)',
+          description: currentBlockData.permissions.description,
+          color: 'text-blue-400',
+          bgColor: 'bg-blue-900/30'
+        };
+      case '010':
+        return {
+          mode: '公開讀取模式 (010)',
+          description: currentBlockData.permissions.description,
+          color: 'text-cyan-400',
+          bgColor: 'bg-cyan-900/30'
+        };
+      case '011':
+        return {
+          mode: '金鑰B專用模式 (011)',
+          description: currentBlockData.permissions.description,
+          color: 'text-purple-400',
+          bgColor: 'bg-purple-900/30'
+        };
+      case '100':
+        return {
+          mode: '只讀保護模式 (100)',
+          description: currentBlockData.permissions.description,
+          color: 'text-red-400',
+          bgColor: 'bg-red-900/30'
+        };
+      case '101':
+        return {
+          mode: '金鑰B只讀模式 (101)',
+          description: currentBlockData.permissions.description,
+          color: 'text-orange-400',
+          bgColor: 'bg-orange-900/30'
+        };
+      case '110':
+        return {
+          mode: '金鑰B嚴格模式 (110)',
+          description: currentBlockData.permissions.description,
+          color: 'text-yellow-400',
+          bgColor: 'bg-yellow-900/30'
+        };
+      case '111':
+        return {
+          mode: '完全禁止模式 (111)',
+          description: currentBlockData.permissions.description,
+          color: 'text-gray-400',
+          bgColor: 'bg-gray-900/30'
+        };
+      default:
+        return {
+          mode: '自定義模式',
+          description: currentBlockData.permissions.description,
+          color: 'text-slate-400',
+          bgColor: 'bg-slate-900/30'
+        };
+    }
+  }
+};
+
 // 獲取扇區的 Trailer Block 資訊
 const getSectorTrailerInfo = (sectorNumber: number, memoryData: MemoryBlock[]) => {
-  const trailerBlock = memoryData.find(block => 
+  const trailerBlock = memoryData.find(block =>
     block.sector === sectorNumber && block.type === 'trailer'
   );
-  
+
   if (!trailerBlock) return null;
-  
+
   // 從實際的 data 中提取存取位元（第6-8位元組，即第12-17字符）
   const actualAccessBits = trailerBlock.data.substring(12, 18);
-  
+
   // 創建一個新的物件，使用實際的存取位元
   return {
     ...trailerBlock,
@@ -1266,18 +1433,18 @@ const getSectorTrailerInfo = (sectorNumber: number, memoryData: MemoryBlock[]) =
   };
 };
 
-const HexEditor = ({ 
-  data, 
-  selectedBlock, 
+const HexEditor = ({
+  data,
+  selectedBlock,
   onBlockSelect,
-  selectedSector 
-}: { 
-  data: MemoryBlock[]; 
+  selectedSector
+}: {
+  data: MemoryBlock[];
   selectedBlock: number | null;
   onBlockSelect: (block: number) => void;
   selectedSector: number | null;
 }) => {
-  const [hoveredGroup, setHoveredGroup] = useState<{blockIndex: number, start: number, end: number} | null>(null);
+  const [hoveredGroup, setHoveredGroup] = useState<{ blockIndex: number, start: number, end: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // 當選擇的扇區改變時，自動滾動到該扇區
@@ -1285,9 +1452,9 @@ const HexEditor = ({
     if (selectedSector !== null && scrollContainerRef.current) {
       const sectorElement = scrollContainerRef.current.querySelector(`[data-sector="${selectedSector}"]`);
       if (sectorElement) {
-        sectorElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start' 
+        sectorElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
         });
       }
     }
@@ -1306,19 +1473,19 @@ const HexEditor = ({
           ))}
         </div>
       </div>
-      
+
       {/* 滾動容器 - 只有這個區域會滾動 */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 min-h-0">
         {data.map((block, blockIndex) => {
           const isSelected = selectedBlock === blockIndex;
           const isTrailer = block.type === 'trailer';
           const isSectorStart = block.block % 4 === 0; // 每個扇區的第一個區塊
-          
+
           // 顯示完整資料，包括 trailer block 的金鑰
           const displayBytes = block.data.match(/.{2}/g) || [];
-          
+
           return (
-            <div key={blockIndex}>
+            <div key={blockIndex} data-block={blockIndex}>
               {/* 扇區標識 */}
               {isSectorStart && (
                 <div className="text-xs text-slate-500 mb-1 flex items-center gap-2" data-sector={block.sector}>
@@ -1327,7 +1494,7 @@ const HexEditor = ({
                   <div className="flex-1 h-px bg-slate-600"></div>
                 </div>
               )}
-              
+
               <motion.div
                 className={`grid ${isTrailer ? 'mb-2' : ''}`}
                 style={{ gridTemplateColumns: '64px 1fr' }}
@@ -1339,7 +1506,7 @@ const HexEditor = ({
                 <div className="text-slate-400 text-xs flex items-center justify-center px-2 py-0.5 border-r border-slate-600 bg-slate-800/50 w-16">
                   0x{block.address.toString(16).toUpperCase().padStart(2, '0')}
                 </div>
-                
+
                 {/* Data bytes with group-level borders */}
                 <div className="grid gap-0 relative" style={{ gridTemplateColumns: 'repeat(16, 1fr)' }}>
                   {[...Array(16)].map((_, byteIndex) => {
@@ -1347,12 +1514,12 @@ const HexEditor = ({
                     const highlightType = getByteHighlight(block, byteIndex);
                     const highlightColor = getHighlightColor(highlightType);
                     const groupRange = getDataGroupRange(block, byteIndex);
-                    
-                    const isInHoveredGroup = hoveredGroup && 
+
+                    const isInHoveredGroup = hoveredGroup &&
                       hoveredGroup.blockIndex === blockIndex &&
-                      byteIndex >= hoveredGroup.start && 
+                      byteIndex >= hoveredGroup.start &&
                       byteIndex <= hoveredGroup.end;
-                    
+
                     return (
                       <motion.button
                         key={byteIndex}
@@ -1365,8 +1532,8 @@ const HexEditor = ({
                         onMouseLeave={() => setHoveredGroup(null)}
                         className={`
                           relative h-5 text-xs flex items-center justify-center transition-all font-bold text-white
-                          ${isSelected 
-                            ? `${highlightColor}` 
+                          ${isSelected
+                            ? `${highlightColor}`
                             : `${highlightColor}`
                           }
                           ${isInHoveredGroup ? 'z-10 shadow-lg scale-110' : ''}
@@ -1387,9 +1554,9 @@ const HexEditor = ({
   );
 };
 
-const BlockBasicInfo = ({ 
+const BlockBasicInfo = ({
   block
-}: { 
+}: {
   block: MemoryBlock | null;
 }) => {
   if (!block) {
@@ -1408,17 +1575,16 @@ const BlockBasicInfo = ({
       className="bg-slate-800/50 rounded-lg p-3 space-y-3"
     >
       <div className="flex items-center gap-2">
-        <div className={`w-3 h-3 rounded ${
-          block.type === 'manufacturer' ? 'bg-blue-600' :
+        <div className={`w-3 h-3 rounded ${block.type === 'manufacturer' ? 'bg-blue-600' :
           block.type === 'data' ? 'bg-slate-600' :
-          block.type === 'value' ? 'bg-green-600' :
-          'bg-red-600'
-        }`}></div>
+            block.type === 'value' ? 'bg-green-600' :
+              'bg-red-600'
+          }`}></div>
         <h3 className="text-sm font-bold">
           區塊 {block.block} (0x{block.address.toString(16).toUpperCase().padStart(2, '0')})
         </h3>
       </div>
-      
+
       <div className="space-y-2 text-xs">
         <div>
           <h4 className="font-bold text-slate-300 mb-1">基本資訊</h4>
@@ -1426,14 +1592,14 @@ const BlockBasicInfo = ({
             <div>扇區: {block.sector}</div>
             <div>類型: {
               block.type === 'manufacturer' ? '製造商' :
-              block.type === 'data' ? '資料' :
-              block.type === 'value' ? '值' :
-              '尾塊'
+                block.type === 'data' ? '資料' :
+                  block.type === 'value' ? '值' :
+                    '尾塊'
             }</div>
             <div>地址: 0x{block.address.toString(16).toUpperCase().padStart(2, '0')}</div>
           </div>
         </div>
-        
+
         <div>
           <h4 className="font-bold text-slate-300 mb-1">原始資料</h4>
           <div className="bg-slate-900 p-2 rounded font-mono text-xs break-all">
@@ -1445,17 +1611,23 @@ const BlockBasicInfo = ({
   );
 };
 
-const BlockStructureDetails = ({ 
+const BlockStructureDetails = ({
   block,
   selectedSector,
-  memoryData
-}: { 
+  memoryData,
+  onBlockSelect
+}: {
   block: MemoryBlock | null;
   selectedSector: number | null;
   memoryData: MemoryBlock[];
+  onBlockSelect: (blockIndex: number) => void;
 }) => {
   const selectedTrailerInfo = selectedSector !== null ? getSectorTrailerInfo(selectedSector, memoryData) : null;
   
+  // 獲取當前區塊所在扇區的 trailer 資訊
+  const currentBlockSector = block ? block.sector : null;
+  const currentSectorTrailerInfo = currentBlockSector !== null ? getSectorTrailerInfo(currentBlockSector, memoryData) : null;
+
   if (!block) {
     return (
       <div className="bg-slate-800/50 rounded-lg p-3 text-center text-slate-400 text-sm">
@@ -1472,7 +1644,7 @@ const BlockStructureDetails = ({
       className="bg-slate-800/50 rounded-lg p-3 space-y-3"
     >
       <h3 className="text-sm font-bold">資料結構詳細</h3>
-      
+
       {/* 顯示選中扇區的金鑰資訊 */}
       {selectedTrailerInfo && (
         <div className="p-3 bg-slate-900/50 rounded mb-3">
@@ -1491,61 +1663,75 @@ const BlockStructureDetails = ({
               <span className="font-mono">{selectedTrailerInfo.keyB}</span>
             </div>
             {(() => {
-              const accessInfo = parseAccessBits(selectedTrailerInfo.accessBits || '');
+              const blockInSector = block.block % 4;
+              // 使用當前區塊所在扇區的存取位元，而不是選中扇區的
+              const accessBitsToUse = currentSectorTrailerInfo?.accessBits || selectedTrailerInfo?.accessBits || '';
+              const currentBlockAccessInfo = parseBlockAccessMode(accessBitsToUse, blockInSector);
               return (
                 <div className="mt-2 space-y-2">
-                  <div className={`p-2 rounded ${accessInfo.bgColor}`}>
-                    <div className={`font-bold ${accessInfo.color} text-xs`}>
-                      存取模式: {accessInfo.mode}
+                  {/* 精確的位元級分析 */}
+                  <div className="mt-1 p-2 bg-slate-900/50 rounded border border-slate-600">
+                    <div className="text-slate-300 text-xs font-semibold mb-1.5 flex items-center gap-1">
+                      <span className="text-sm">🔬</span>
+                      精確位元分析 (扇區 {currentBlockSector})
                     </div>
-                    <div className="text-slate-300 text-xs mt-1">
-                      {accessInfo.description}
-                    </div>
-                    
-                    {/* 精確的位元級分析 */}
-                    <div className="mt-2 p-2 bg-slate-900/50 rounded border border-slate-600">
-                      <div className="text-slate-300 text-xs font-semibold mb-2">🔬 精確位元分析</div>
-                      {(() => {
-                        const bitAnalysis = parseAccessBitsByBlock(selectedTrailerInfo.accessBits || '');
-                        return (
-                          <div className="space-y-2 text-xs">
-                            <div className="grid grid-cols-4 gap-1">
-                              {[0, 1, 2, 3].map(blockNum => {
-                                const blockKey = blockNum === 3 ? 'trailer' : `block${blockNum}` as 'block0' | 'block1' | 'block2';
-                                const blockData = bitAnalysis[blockKey];
-                                return (
-                                  <div key={blockNum} className="bg-slate-800/50 p-1 rounded text-center">
-                                    <div className="text-slate-300 font-semibold">
-                                      {blockNum === 3 ? '尾塊' : `區塊${blockNum}`}
-                                    </div>
-                                    <div className={`${accessInfo.color} font-mono`}>
-                                      {blockData.bits.c1}{blockData.bits.c2}{blockData.bits.c3}
-                                    </div>
-                                    <div className="text-slate-400">
-                                      ({blockData.bits.value})
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            <div className="text-slate-400 text-xs">
-                              每個區塊的 C1C2C3 位元組合決定其獨立的存取權限
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                  
-                  {/* 詳細區塊權限 */}
-                  <div className="bg-slate-800/50 p-2 rounded">
-                    <div className="font-bold text-slate-200 mb-2 text-xs">當前區塊存取權限（精確分析）</div>
                     {(() => {
-                      const bitAnalysis = parseAccessBitsByBlock(selectedTrailerInfo.accessBits || '');
+                      const bitAnalysis = parseAccessBitsByBlock(accessBitsToUse);
+                      return (
+                        <div className="space-y-1.5 text-xs">
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {[0, 1, 2, 3].map(blockNum => {
+                              const blockKey = blockNum === 3 ? 'trailer' : `block${blockNum}` as 'block0' | 'block1' | 'block2';
+                              const blockData = bitAnalysis[blockKey];
+                              const isCurrentBlock = blockNum === blockInSector;
+                              const targetBlockIndex = currentBlockSector! * 4 + blockNum;
+                              
+                              const handleBlockClick = () => {
+                                onBlockSelect(targetBlockIndex);
+                              };
+
+                              return (
+                                <button 
+                                  key={blockNum} 
+                                  onClick={handleBlockClick}
+                                  className={`p-1.5 rounded text-center transition-all cursor-pointer hover:scale-105 ${
+                                    isCurrentBlock 
+                                      ? 'bg-gradient-to-br from-purple-700/80 to-purple-800/80 border border-purple-400' 
+                                      : 'bg-slate-800/60 border border-slate-600 hover:bg-slate-700/80 hover:border-slate-500'
+                                  }`}
+                                >
+                                  <div className={`font-semibold text-xs mb-0.5 ${isCurrentBlock ? 'text-purple-200' : 'text-slate-300'}`}>
+                                    {blockNum === 3 ? `尾塊${targetBlockIndex}` : `區塊${targetBlockIndex}`}
+                                  </div>
+                                  <div className={`font-mono text-sm font-bold ${isCurrentBlock ? 'text-purple-100' : currentBlockAccessInfo.color}`}>
+                                    {blockData.bits.c1}{blockData.bits.c2}{blockData.bits.c3}
+                                  </div>
+                                  <div className={`text-xs ${isCurrentBlock ? 'text-purple-300' : 'text-slate-400'}`}>
+                                    ({blockData.bits.value})
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="text-slate-400 text-xs text-center p-1.5 bg-slate-800/40 rounded">
+                            點擊區塊可選擇並查看該區塊的詳細存取權限
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* 當前區塊的存取模式 */}
+                  <div className={`p-2 rounded ${currentBlockAccessInfo.bgColor} border ${currentBlockAccessInfo.color.replace('text-', 'border-')}`}>
+                    <div className={`font-bold ${currentBlockAccessInfo.color} text-xs flex items-center gap-1`}>
+                      存取模式: {currentBlockAccessInfo.mode}
+                    </div>
+                    {(() => {
+                      const bitAnalysis = parseAccessBitsByBlock(accessBitsToUse);
                       const blockInSector = block.block % 4;
                       let currentBlockData;
                       let blockLabel = "";
-                      
+
                       if (blockInSector === 0) {
                         currentBlockData = bitAnalysis.block0;
                         blockLabel = `區塊 ${block.block}`;
@@ -1560,96 +1746,96 @@ const BlockStructureDetails = ({
                         currentBlockData = bitAnalysis.trailer;
                         blockLabel = `區塊 ${block.block}`;
                         return (
-                          <div className="border border-purple-600 rounded p-2">
-                            <div className="font-semibold text-slate-300 mb-1">{blockLabel} (扇區尾塊)</div>
-                            <div className="mb-2 text-xs">
+                          <div className="mt-1 border border-slate-600 rounded p-1.5">
+                            <div className="font-semibold text-slate-300 mb-1 text-xs">{blockLabel} (扇區尾塊)</div>
+                            <div className="mb-1 text-xs">
                               <span className={`text-slate-200 font-mono`}>存取位元：C1C2C3 = </span>
-                              <span className={`${accessInfo.color} font-mono`}>
+                              <span className={`${currentBlockAccessInfo.color} font-mono`}>
                                 {currentBlockData.bits.c1}{currentBlockData.bits.c2}{currentBlockData.bits.c3} ({currentBlockData.bits.value})
                               </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-1 text-xs">
+                            <div className="grid grid-cols-2 gap-0.5 text-xs">
                               <div className="flex justify-between">
-                                <span className="text-slate-300">金鑰A 讀取:</span>
+                                <span className="text-slate-300">KA讀:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.keyA?.read === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.keyA?.read || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">金鑰A 寫入:</span>
+                                <span className="text-slate-300">KA寫:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.keyA?.write === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.keyA?.write || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">存取位元 讀取:</span>
+                                <span className="text-slate-300">AC讀:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.accessBits?.read === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.accessBits?.read || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">存取位元 寫入:</span>
+                                <span className="text-slate-300">AC寫:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.accessBits?.write === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.accessBits?.write || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">金鑰B 讀取:</span>
+                                <span className="text-slate-300">KB讀:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.keyB?.read === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.keyB?.read || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">金鑰B 寫入:</span>
+                                <span className="text-slate-300">KB寫:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.keyB?.write === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.keyB?.write || 'N/A'}
                                 </span>
                               </div>
                             </div>
-                            <div className="mt-2 text-xs text-slate-400 bg-slate-800 p-2 rounded">
+                            <div className="mt-1 text-xs text-slate-400 bg-slate-800 p-1 rounded">
                               <strong>說明:</strong> {currentBlockData.permissions.description || '無可用說明'}
                             </div>
                           </div>
                         );
                       }
-                      
+
                       if (currentBlockData) {
                         return (
-                          <div className="border border-slate-600 rounded p-2">
-                            <div className="font-semibold text-slate-300 mb-1">{blockLabel}</div>
-                            <div className="mb-2 text-xs">
+                          <div className="mt-1 border border-slate-600 rounded p-1.5">
+                            <div className="font-semibold text-slate-300 mb-1 text-xs">{blockLabel}</div>
+                            <div className="mb-1 text-xs">
                               <span className={`text-slate-200 font-mono`}>存取位元：C1C2C3 = </span>
-                              <span className={`${accessInfo.color} font-mono`}>
+                              <span className={`${currentBlockAccessInfo.color} font-mono`}>
                                 {currentBlockData.bits.c1}{currentBlockData.bits.c2}{currentBlockData.bits.c3} ({currentBlockData.bits.value})
                               </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-1 text-xs">
+                            <div className="grid grid-cols-2 gap-0.5 text-xs">
                               <div className="flex justify-between">
-                                <span className="text-slate-300">讀取:</span>
+                                <span className="text-slate-300">讀:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.read === '禁止' ? 'text-red-400' : currentBlockData.permissions.read === '公開' ? 'text-green-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.read}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">寫入:</span>
+                                <span className="text-slate-300">寫:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.write === '禁止' ? 'text-red-400' : 'text-yellow-400'}`}>
                                   {currentBlockData.permissions.write}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">遞增:</span>
+                                <span className="text-slate-300">增:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.increment === '禁止' ? 'text-red-400' : 'text-green-400'}`}>
                                   {currentBlockData.permissions.increment}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-slate-300">遞減:</span>
+                                <span className="text-slate-300">減:</span>
                                 <span className={`font-mono ${currentBlockData.permissions.decrement === '禁止' ? 'text-red-400' : 'text-orange-400'}`}>
                                   {currentBlockData.permissions.decrement}
                                 </span>
                               </div>
                             </div>
-                            <div className="mt-2 text-xs text-slate-400 bg-slate-800 p-2 rounded">
+                            <div className="mt-1 text-xs text-slate-400 bg-slate-800 p-1 rounded">
                               <strong>說明:</strong> {currentBlockData.permissions.description || '無可用說明'}
                             </div>
                           </div>
@@ -1664,7 +1850,7 @@ const BlockStructureDetails = ({
           </div>
         </div>
       )}
-      
+
       {/* 特殊區塊詳細資訊 */}
       {block.type === 'trailer' && (
         <div>
@@ -1697,16 +1883,16 @@ const BlockStructureDetails = ({
                 <p>• 位元組 6: !C2₃!C2₂!C2₁!C2₀!C1₃!C1₂!C1₁!C1₀ (反向)</p>
                 <p>• 位元組 7: C1₃C1₂C1₁C1₀!C3₃!C3₂!C3₁!C3₀</p>
                 <p>• 位元組 8: C3₃C3₂C3₁C3₀C2₃C2₂C2₁C2₀</p>
-                
+
                 {/* 調試資訊 */}
                 {(() => {
                   const accessBits = block.accessBits || '';
                   const validation = validateAccessBits(accessBits);
-                  
+
                   return (
                     <div className="mt-2 p-2 bg-gray-900/50 rounded border border-gray-600">
                       <div className="text-yellow-200 font-semibold mb-1">存取位元驗證與解析:</div>
-                      
+
                       {/* 格式驗證結果 */}
                       <div className="mb-2 p-1 rounded border">
                         <div className={`text-xs ${validation.valid ? 'text-green-300 border-green-600' : 'text-red-300 border-red-600'}`}>
@@ -1719,27 +1905,27 @@ const BlockStructureDetails = ({
                           </div>
                         )}
                       </div>
-                      
+
                       {/* 位元解析結果 */}
                       {(() => {
                         const effectiveAccessBits = validation.valid ? accessBits : generateValidAccessBits('default');
                         const bitAnalysis = parseAccessBitsByBlock(effectiveAccessBits);
-                        
+
                         return (
                           <div>
                             <div className="text-yellow-200 text-xs mb-1">位元解析 ({effectiveAccessBits}):</div>
                             <div className="grid grid-cols-2 gap-1 text-xs">
-                              <div>區塊0: C1C2C3 = {bitAnalysis.block0.bits.c1}{bitAnalysis.block0.bits.c2}{bitAnalysis.block0.bits.c3} 
+                              <div>區塊0: C1C2C3 = {bitAnalysis.block0.bits.c1}{bitAnalysis.block0.bits.c2}{bitAnalysis.block0.bits.c3}
                                 {bitAnalysis.block0.bits.valid ? '✓' : '❌'}</div>
-                              <div>區塊1: C1C2C3 = {bitAnalysis.block1.bits.c1}{bitAnalysis.block1.bits.c2}{bitAnalysis.block1.bits.c3} 
+                              <div>區塊1: C1C2C3 = {bitAnalysis.block1.bits.c1}{bitAnalysis.block1.bits.c2}{bitAnalysis.block1.bits.c3}
                                 {bitAnalysis.block1.bits.valid ? '✓' : '❌'}</div>
-                              <div>區塊2: C1C2C3 = {bitAnalysis.block2.bits.c1}{bitAnalysis.block2.bits.c2}{bitAnalysis.block2.bits.c3} 
+                              <div>區塊2: C1C2C3 = {bitAnalysis.block2.bits.c1}{bitAnalysis.block2.bits.c2}{bitAnalysis.block2.bits.c3}
                                 {bitAnalysis.block2.bits.valid ? '✓' : '❌'}</div>
-                              <div>尾塊: C1C2C3 = {bitAnalysis.trailer.bits.c1}{bitAnalysis.trailer.bits.c2}{bitAnalysis.trailer.bits.c3} 
+                              <div>尾塊: C1C2C3 = {bitAnalysis.trailer.bits.c1}{bitAnalysis.trailer.bits.c2}{bitAnalysis.trailer.bits.c3}
                                 {bitAnalysis.trailer.bits.valid ? '✓' : '❌'}</div>
                             </div>
                             <div className="text-xs text-gray-400 mt-1">
-                              原始位元組: 0x{effectiveAccessBits.substr(0,2)}, 0x{effectiveAccessBits.substr(2,2)}, 0x{effectiveAccessBits.substr(4,2)}
+                              原始位元組: 0x{effectiveAccessBits.substr(0, 2)}, 0x{effectiveAccessBits.substr(2, 2)}, 0x{effectiveAccessBits.substr(4, 2)}
                             </div>
                           </div>
                         );
@@ -1766,7 +1952,7 @@ const BlockStructureDetails = ({
                 </div>
               );
             }
-            
+
             return (
               <div className="space-y-1 text-xs">
                 <div className={`p-2 rounded ${valueInfo.isValid ? 'bg-green-900/30' : 'bg-red-900/30'}`}>
@@ -1777,7 +1963,7 @@ const BlockStructureDetails = ({
                     {valueInfo.isValid ? '格式驗證通過' : '格式驗證失敗'}
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-1">
                   <div className={`p-1 rounded text-xs ${valueInfo.validationErrors.valueInverted ? 'bg-red-900/20' : 'bg-slate-900/30'}`}>
                     <div className="font-bold">值反轉</div>
@@ -1852,10 +2038,10 @@ const BlockStructureDetails = ({
   );
 };
 
-const MemoryMap = ({ 
-  onSectorSelect, 
+const MemoryMap = ({
+  onSectorSelect,
   selectedSector
-}: { 
+}: {
   onSectorSelect: (sector: number) => void;
   selectedSector: number | null;
 }) => {
@@ -1881,8 +2067,8 @@ const MemoryMap = ({
             onClick={() => onSectorSelect(sector)}
             className={`
               p-2 rounded text-xs font-medium transition-all text-white
-              ${selectedSector === sector 
-                ? 'ring-2 ring-purple-400 shadow-lg' 
+              ${selectedSector === sector
+                ? 'ring-2 ring-purple-400 shadow-lg'
                 : 'hover:shadow-md'
               }
               ${getSectorColor(sector)}
@@ -1897,7 +2083,7 @@ const MemoryMap = ({
           </motion.button>
         ))}
       </div>
-      
+
       <div className="mt-3 space-y-1">
         <div className="text-xs text-slate-400">
           總容量: 1024 bytes (64 區塊 × 16 位元組)
@@ -1966,7 +2152,7 @@ export default function MemoryPage() {
               <div className="flex items-center justify-between mb-3 flex-shrink-0">
                 <h3 className="text-lg font-bold">十六進制編輯器視圖</h3>
               </div>
-              
+
               {/* 詳細圖例 - 固定不滾動 */}
               <div className="mb-3 p-2 bg-slate-900/50 rounded-lg flex-shrink-0">
                 <h4 className="text-xs font-bold mb-1">資料類型圖例</h4>
@@ -2013,10 +2199,10 @@ export default function MemoryPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* HexEditor 容器 - 可滾動 */}
               <div className="flex-1 flex flex-col min-h-0">
-                <HexEditor 
+                <HexEditor
                   data={memoryData}
                   selectedBlock={selectedBlock}
                   onBlockSelect={setSelectedBlock}
@@ -2031,14 +2217,14 @@ export default function MemoryPage() {
             {/* 左欄 */}
             <div className="space-y-3 flex flex-col min-h-0">
               {/* 記憶體配置圖 */}
-              <MemoryMap 
+              <MemoryMap
                 onSectorSelect={handleSectorSelect}
                 selectedSector={selectedSector}
               />
 
               {/* 區塊基本資料 */}
               <div className="flex-1 min-h-0">
-                <BlockBasicInfo 
+                <BlockBasicInfo
                   block={selectedBlockData}
                 />
               </div>
@@ -2048,10 +2234,11 @@ export default function MemoryPage() {
             <div className="space-y-3 flex flex-col min-h-0">
               {/* 區塊詳細結構 */}
               <div className="flex-1 min-h-0">
-                <BlockStructureDetails 
+                <BlockStructureDetails
                   block={selectedBlockData}
                   selectedSector={selectedSector}
                   memoryData={memoryData}
+                  onBlockSelect={setSelectedBlock}
                 />
               </div>
             </div>
