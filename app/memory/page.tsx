@@ -1463,11 +1463,11 @@ const HexEditor = ({
   return (
     <div className="bg-slate-900/80 rounded-lg p-3 font-mono text-sm h-full flex flex-col">
       {/* Header - 固定在頂部 */}
-      <div className="grid mb-2 sticky top-0 z-10 bg-slate-900/90 backdrop-blur-sm py-2 flex-shrink-0" style={{ gridTemplateColumns: '64px 1fr' }}>
-        <div className="text-slate-400 text-xs flex items-center justify-center">Addr</div>
+      <div className="grid mb-2 sticky top-0 z-10 bg-slate-900/90 backdrop-blur-sm py-1 sm:py-2 flex-shrink-0" style={{ gridTemplateColumns: '64px 1fr' }}>
+        <div className="h-4 sm:h-5 text-slate-400 text-xs flex items-center justify-center">Addr</div>
         <div className="grid" style={{ gridTemplateColumns: 'repeat(16, 1fr)' }}>
           {[...Array(16)].map((_, i) => (
-            <div key={i} className="text-slate-400 text-xs text-center p-0.5">
+            <div key={i} className="h-4 sm:h-5 text-slate-400 text-xs text-center flex items-center justify-center">
               {i.toString(16).toUpperCase()}
             </div>
           ))}
@@ -1503,12 +1503,12 @@ const HexEditor = ({
                 transition={{ delay: blockIndex * 0.005 }}
               >
                 {/* Address */}
-                <div className="text-slate-400 text-xs flex items-center justify-center px-2 py-0.5 border-r border-slate-600 bg-slate-800/50 w-16">
+                <div className="h-5 text-slate-400 text-xs flex items-center justify-center px-1 sm:px-2 py-0 sm:py-0.5 border-r border-slate-600 bg-slate-800/50 w-16">
                   0x{block.address.toString(16).toUpperCase().padStart(2, '0')}
                 </div>
 
                 {/* Data bytes with group-level borders */}
-                <div className="grid gap-0 relative" style={{ gridTemplateColumns: 'repeat(16, 1fr)' }}>
+                <div className="grid gap-0" style={{ gridTemplateColumns: 'repeat(16, 1fr)' }}>
                   {[...Array(16)].map((_, byteIndex) => {
                     const byte = displayBytes[byteIndex] || '00';
                     const highlightType = getByteHighlight(block, byteIndex);
@@ -1530,8 +1530,9 @@ const HexEditor = ({
                           end: groupRange.end
                         })}
                         onMouseLeave={() => setHoveredGroup(null)}
+                        style={{ minHeight: 0 }}
                         className={`
-                          relative h-5 text-xs flex items-center justify-center transition-all font-bold text-white
+                          h-5 text-xs flex items-center justify-center transition-all font-bold text-white
                           ${isSelected
                             ? `${highlightColor}`
                             : `${highlightColor}`
@@ -1688,16 +1689,6 @@ const BlockStructureDetails = ({
                               
                               const handleBlockClick = () => {
                                 onBlockSelect(targetBlockIndex);
-                                // 滾動到對應的區塊
-                                setTimeout(() => {
-                                  const blockElement = document.querySelector(`[data-block="${targetBlockIndex}"]`);
-                                  if (blockElement) {
-                                    blockElement.scrollIntoView({ 
-                                      behavior: 'smooth', 
-                                      block: 'center' 
-                                    });
-                                  }
-                                }, 100);
                               };
 
                               return (
@@ -1866,24 +1857,6 @@ const BlockStructureDetails = ({
         <div>
           <h4 className="font-bold text-slate-300 mb-2 text-xs">扇區尾塊結構</h4>
           <div className="space-y-3 text-xs">
-            {/* 結構說明 */}
-            <div className="bg-slate-800/50 p-3 rounded border border-slate-600">
-              <h5 className="font-semibold text-slate-200 mb-2">扇區尾塊組成</h5>
-              <div className="space-y-1 text-slate-300">
-                <div className="flex justify-between">
-                  <span>金鑰 A (Bytes 0-5):</span>
-                  <span className="font-mono text-red-300">6 位元組</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>存取位元 (Bytes 6-9):</span>
-                  <span className="font-mono text-yellow-300">4 位元組</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>金鑰 B (Bytes 10-15):</span>
-                  <span className="font-mono text-orange-300">6 位元組</span>
-                </div>
-              </div>
-            </div>
 
             {/* 存取位元說明 */}
             <div className="bg-slate-800/50 p-3 rounded border border-yellow-600">
@@ -2134,30 +2107,40 @@ export default function MemoryPage() {
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col overflow-hidden">
-      <div className="container mx-auto px-4 py-8 flex flex-col flex-1 min-h-0">
+      <div className="container mx-auto px-4 py-4 sm:py-8 flex flex-col flex-1 min-h-0">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center mb-8"
+          className="flex items-center mb-4 sm:mb-8"
         >
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-purple-400 hover:text-purple-300 transition-colors">
-              <ArrowLeft size={24} />
-            </Link>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Link href="/" className="text-purple-400 hover:text-purple-300 transition-colors flex-shrink-0">
+                <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
+              </Link>
+            </motion.div>
+            <h1 className="text-3xl sm:text-4xl lg:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               Mifare Classic 記憶體結構
             </h1>
           </div>
         </motion.div>
 
-        <div className="flex gap-4 flex-1 min-h-0">
+        <div className="flex flex-col xl:flex-row gap-4 flex-1 min-h-0">
           {/* Hex Editor */}
-          <div className="flex-shrink-0 flex flex-col min-h-0" style={{ width: '700px' }}>
+          <div className="w-full lg:w-auto lg:flex-shrink-0 flex flex-col min-h-0">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 mb-4 flex-1 flex flex-col min-h-0"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-3 sm:p-4 flex-1 flex flex-col min-h-0"
+              style={{ 
+                width: '100%', 
+                maxWidth: '700px', 
+                margin: '0 auto'
+              }}
             >
               <div className="flex items-center justify-between mb-3 flex-shrink-0">
                 <h3 className="text-lg font-bold">十六進制編輯器視圖</h3>
@@ -2211,7 +2194,7 @@ export default function MemoryPage() {
               </div>
 
               {/* HexEditor 容器 - 可滾動 */}
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 min-h-0 overflow-hidden">
                 <HexEditor
                   data={memoryData}
                   selectedBlock={selectedBlock}
@@ -2222,34 +2205,36 @@ export default function MemoryPage() {
             </motion.div>
           </div>
 
-          {/* 側邊欄 - 左右分欄 */}
-          <div className="flex-1 min-w-0 grid grid-cols-2 gap-4 min-h-0">
-            {/* 左欄 */}
-            <div className="space-y-3 flex flex-col min-h-0">
-              {/* 記憶體配置圖 */}
-              <MemoryMap
-                onSectorSelect={handleSectorSelect}
-                selectedSector={selectedSector}
-              />
-
-              {/* 區塊基本資料 */}
-              <div className="flex-1 min-h-0">
-                <BlockBasicInfo
-                  block={selectedBlockData}
-                />
-              </div>
-            </div>
-
-            {/* 右欄 */}
-            <div className="space-y-3 flex flex-col min-h-0">
-              {/* 區塊詳細結構 */}
-              <div className="flex-1 min-h-0">
-                <BlockStructureDetails
-                  block={selectedBlockData}
+          {/* 側邊欄 - 左右分欄，只在大螢幕顯示 */}
+          <div className="hidden xl:block flex-1 min-w-0 min-h-0">
+            <div className="grid grid-cols-2 gap-4 h-full min-h-0">
+              {/* 左欄 */}
+              <div className="space-y-3 flex flex-col min-h-0">
+                {/* 記憶體配置圖 */}
+                <MemoryMap
+                  onSectorSelect={handleSectorSelect}
                   selectedSector={selectedSector}
-                  memoryData={memoryData}
-                  onBlockSelect={setSelectedBlock}
                 />
+
+                {/* 區塊基本資料 */}
+                <div className="flex-1 min-h-0">
+                  <BlockBasicInfo
+                    block={selectedBlockData}
+                  />
+                </div>
+              </div>
+
+              {/* 右欄 */}
+              <div className="space-y-3 flex flex-col min-h-0">
+                {/* 區塊詳細結構 */}
+                <div className="flex-1 min-h-0">
+                  <BlockStructureDetails
+                    block={selectedBlockData}
+                    selectedSector={selectedSector}
+                    memoryData={memoryData}
+                    onBlockSelect={setSelectedBlock}
+                  />
+                </div>
               </div>
             </div>
           </div>
