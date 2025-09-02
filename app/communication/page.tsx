@@ -309,13 +309,31 @@ export default function CommunicationPage() {
                 </div>
               </div>
 
-              {/* 技術說明 */}
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <h4 className="text-lg font-bold text-slate-200 mb-3">技術說明</h4>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  {communicationSteps[currentStep]?.details}
-                </p>
-              </div>
+              {/* 通訊原理說明 */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-slate-900/30 border border-blue-500/20 rounded-lg p-6"
+              >
+                <h3 className="text-lg font-bold mb-4 text-cyan-400 flex items-center gap-2">
+                  <span className="text-xl">📡</span>
+                  通訊原理
+                </h3>
+                <div className="text-sm text-slate-300 leading-relaxed">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentStep}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {communicationSteps[currentStep]?.details}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </motion.div>
             </motion.div>
           </div>
 

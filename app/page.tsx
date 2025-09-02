@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Folder, Lock, Wifi, HardDrive, CheckCircle } from "lucide-react";
+import { ArrowRight, BookOpen, Folder, Lock, Wifi, HardDrive, CheckCircle, Shield, Target } from "lucide-react";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -35,6 +35,26 @@ export default function HomePage() {
       type: "demo",
       status: "available",
       features: ["Hex 編輯器", "扇區結構", "存取控制", "資料格式"],
+    },
+    {
+      title: "Nested Attack",
+      description: "利用認證漏洞的金鑰恢復攻擊",
+      icon: Shield,
+      href: "/nested",
+      color: "from-red-500 to-red-700",
+      type: "attack",
+      status: "available", 
+      features: ["認證序列分析", "nT 預測", "金鑰空間縮減", "暴力破解"],
+    },
+    {
+      title: "Darkside Attack",
+      description: "基於錯誤注入的快速金鑰破解",
+      icon: Target,
+      href: "/darkside",
+      color: "from-orange-500 to-orange-700",
+      type: "attack",
+      status: "available",
+      features: ["錯誤注入", "Parity 分析", "金鑰位恢復", "快速破解"],
     },
   ];
 
@@ -144,7 +164,7 @@ export default function HomePage() {
             >
               <div className="flex justify-between items-center text-sm text-slate-400">
                 <div className="flex gap-6">
-                  <span>3 個展示模組</span>
+                  <span>5 個展示模組</span>
                   <span>類型: 互動視覺化</span>
                 </div>
                 <div className="flex gap-4">

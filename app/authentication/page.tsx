@@ -668,18 +668,31 @@ export default function AuthenticationPage() {
                 </div>
               </div>
 
-              {/* 技術說明 */}
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <h4 className="text-lg font-bold text-slate-200 mb-3">技術說明</h4>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  {authSteps[currentStep]?.details.split('\n').map((line, index) => (
-                    <span key={index}>
-                      {line}
-                      {index < authSteps[currentStep]?.details.split('\n').length - 1 && <br />}
-                    </span>
-                  ))}
-                </p>
-              </div>
+              {/* 認證原理說明 */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-slate-900/30 border border-green-500/20 rounded-lg p-6"
+              >
+                <h3 className="text-lg font-bold mb-4 text-emerald-400 flex items-center gap-2">
+                  <span className="text-xl">🔐</span>
+                  認證原理
+                </h3>
+                <div className="text-sm text-slate-300 leading-relaxed">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentStep}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {authSteps[currentStep]?.details}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </motion.div>
             </motion.div>
           </div>
 

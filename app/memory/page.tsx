@@ -1688,6 +1688,16 @@ const BlockStructureDetails = ({
                               
                               const handleBlockClick = () => {
                                 onBlockSelect(targetBlockIndex);
+                                // 滾動到對應的區塊
+                                setTimeout(() => {
+                                  const blockElement = document.querySelector(`[data-block="${targetBlockIndex}"]`);
+                                  if (blockElement) {
+                                    blockElement.scrollIntoView({ 
+                                      behavior: 'smooth', 
+                                      block: 'center' 
+                                    });
+                                  }
+                                }, 100);
                               };
 
                               return (
@@ -1714,7 +1724,7 @@ const BlockStructureDetails = ({
                             })}
                           </div>
                           <div className="text-slate-400 text-xs text-center p-1.5 bg-slate-800/40 rounded">
-                            點擊區塊可選擇並查看該區塊的詳細存取權限
+                            點擊區塊可快速跳轉並查看該區塊的詳細存取權限
                           </div>
                         </div>
                       );
