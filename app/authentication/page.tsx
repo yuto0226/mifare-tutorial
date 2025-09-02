@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Play, Pause, RotateCcw, ChevronRight, CreditCard } from "lucide-react";
+import { ArrowLeft, Play, Pause, RotateCcw, CreditCard } from "lucide-react";
 import Link from "next/link";
 
 interface AuthStep {
@@ -697,37 +697,36 @@ export default function AuthenticationPage() {
           </div>
 
           {/* 側邊欄 */}
-          <div className="space-y-4 max-h-[calc(100vh-12rem)] flex flex-col">
-            {/* 驗證步驟列表 - 擴展更多空間 */}
+          <div className="space-y-6 max-h-[calc(100vh-12rem)] flex flex-col">
+            {/* 驗證步驟列表 */}
             <motion.div 
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 shadow-lg flex-1 flex flex-col min-h-0"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 flex-1 flex flex-col min-h-0"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
             >
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2 flex-shrink-0">
-                <ChevronRight size={20} />
-                驗證步驟
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 flex-shrink-0">
+                <span className="text-green-400">🔐</span>
+                認證步驟
               </h3>
-              <div className="space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin">
+              <div className="space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
                 {authSteps.map((step, index) => (
                   <motion.button
                     key={step.id}
                     onClick={() => goToStep(index)}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${
+                    className={`w-full text-left p-3 rounded-lg transition-all duration-300 ${
                       index === currentStep
-                        ? "bg-green-600 text-white shadow-lg"
+                        ? "bg-green-600/30 border border-green-500/50 text-white shadow-lg"
                         : index < currentStep
                         ? "bg-emerald-900/30 text-emerald-400"
-                        : "bg-slate-700/30 text-slate-400 hover:bg-slate-700/50"
+                        : "bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 hover:text-white"
                     }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                         index === currentStep
-                          ? "bg-white text-green-600"
+                          ? "bg-green-500 text-white"
                           : index < currentStep
                           ? "bg-emerald-500 text-white"
                           : "bg-slate-600 text-slate-400"
@@ -735,7 +734,8 @@ export default function AuthenticationPage() {
                         {index + 1}
                       </div>
                       <div>
-                        <div className="font-medium">{step.title}</div>
+                        <p className="font-medium text-sm">{step.title}</p>
+                        <p className="text-xs opacity-75">Crypto-1 驗證</p>
                       </div>
                     </div>
                   </motion.button>
@@ -743,7 +743,7 @@ export default function AuthenticationPage() {
               </div>
             </motion.div>
 
-            {/* 卡片資訊結構 - 移到下方 */}
+            {/* 卡片資訊結構 */}
             <div className="flex-shrink-0">
               <CardInfoStructure isActive={isPlaying && currentStep >= 5} />
             </div>

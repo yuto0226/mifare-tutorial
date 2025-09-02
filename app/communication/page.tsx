@@ -337,44 +337,52 @@ export default function CommunicationPage() {
             </motion.div>
           </div>
 
-          {/* 側邊欄 - 簡化進度 */}
-          <div className="space-y-4">
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4">
-              <h3 className="font-bold text-slate-200 mb-4 flex items-center gap-2">
-                📋 步驟進度
+          {/* 側邊欄 */}
+          <div className="space-y-6">
+            {/* 步驟導航 */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 max-h-[calc(100vh-12rem)] flex flex-col"
+            >
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 flex-shrink-0">
+                <span className="text-blue-400">📡</span>
+                通訊步驟
               </h3>
-              
-              <div className="space-y-3">
+              <div className="space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
                 {communicationSteps.map((step, index) => (
-                  <button
+                  <motion.button
                     key={step.id}
                     onClick={() => goToStep(index)}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${
+                    className={`w-full text-left p-3 rounded-lg transition-all duration-300 ${
                       index === currentStep
-                        ? "bg-blue-600 text-white"
+                        ? "bg-blue-600/30 border border-blue-500/50 text-white shadow-lg"
                         : index < currentStep
-                        ? "bg-green-900/30 text-green-400"
-                        : "bg-slate-700/30 text-slate-400 hover:bg-slate-700/50"
+                        ? "bg-cyan-900/30 text-cyan-400"
+                        : "bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 hover:text-white"
                     }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                         index === currentStep
-                          ? "bg-white text-blue-600"
+                          ? "bg-blue-500 text-white"
                           : index < currentStep
-                          ? "bg-green-500 text-white"
+                          ? "bg-cyan-500 text-white"
                           : "bg-slate-600 text-slate-400"
                       }`}>
                         {index + 1}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{step.title}</div>
+                      <div>
+                        <p className="font-medium text-sm">{step.title}</p>
+                        <p className="text-xs opacity-75">ISO 14443-3 協定</p>
                       </div>
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>

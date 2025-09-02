@@ -382,31 +382,39 @@ export default function DarksideAttackPage() {
           </div>
 
           {/* 側邊欄 */}
-          <div className="space-y-6">
+          <div className="space-y-6 max-h-[calc(100vh-12rem)] flex flex-col">
             {/* 步驟導航 */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 flex-1 flex flex-col min-h-0"
             >
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 flex-shrink-0">
                 <Zap size={18} className="text-orange-400" />
-                攻擊流程
+                攻擊步驟
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
                 {darksideSteps.map((step, index) => (
-                  <button
+                  <motion.button
                     key={step.id}
                     onClick={() => goToStep(index)}
                     className={`w-full text-left p-3 rounded-lg transition-all duration-300 ${
                       index === currentStep
-                        ? "bg-orange-600/30 border border-orange-500/50 text-white"
+                        ? "bg-orange-600/30 border border-orange-500/50 text-white shadow-lg"
+                        : index < currentStep
+                        ? "bg-amber-900/30 text-amber-400"
                         : "bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 hover:text-white"
                     }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        index === currentStep ? "bg-orange-500" : "bg-slate-600"
+                        index === currentStep
+                          ? "bg-orange-500 text-white"
+                          : index < currentStep
+                          ? "bg-amber-500 text-white"
+                          : "bg-slate-600 text-slate-400"
                       }`}>
                         {index + 1}
                       </div>
@@ -415,7 +423,7 @@ export default function DarksideAttackPage() {
                         <p className="text-xs opacity-75">{step.phase}</p>
                       </div>
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </motion.div>
@@ -424,8 +432,8 @@ export default function DarksideAttackPage() {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6"
+              transition={{ delay: 0.2 }}
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 flex-shrink-0"
             >
               <h3 className="text-lg font-bold mb-4 text-orange-400">攻擊特性</h3>
               <div className="space-y-3 text-sm">

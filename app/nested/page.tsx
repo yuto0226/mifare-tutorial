@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Play, Pause, RotateCcw, Shield, Key, Target } from "lucide-react";
+import { ArrowLeft, Play, Pause, RotateCcw, Shield, Target } from "lucide-react";
 import Link from "next/link";
 
 interface NestedStep {
@@ -336,26 +336,34 @@ export default function NestedAttackPage() {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 max-h-[calc(100vh-12rem)] flex flex-col"
             >
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Key size={18} className="text-red-400" />
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 flex-shrink-0">
+                <Shield size={18} className="text-red-400" />
                 攻擊步驟
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
                 {nestedSteps.map((step, index) => (
-                  <button
+                  <motion.button
                     key={step.id}
                     onClick={() => goToStep(index)}
                     className={`w-full text-left p-3 rounded-lg transition-all duration-300 ${
                       index === currentStep
-                        ? "bg-red-600/30 border border-red-500/50 text-white"
+                        ? "bg-red-600/30 border border-red-500/50 text-white shadow-lg"
+                        : index < currentStep
+                        ? "bg-pink-900/30 text-pink-400"
                         : "bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 hover:text-white"
                     }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        index === currentStep ? "bg-red-500" : "bg-slate-600"
+                        index === currentStep
+                          ? "bg-red-500 text-white"
+                          : index < currentStep
+                          ? "bg-pink-500 text-white"
+                          : "bg-slate-600 text-slate-400"
                       }`}>
                         {index + 1}
                       </div>
@@ -364,7 +372,7 @@ export default function NestedAttackPage() {
                         <p className="text-xs opacity-75">{step.phase}</p>
                       </div>
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </motion.div>
