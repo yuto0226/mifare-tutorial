@@ -142,29 +142,38 @@ export default function NestedAttackPage() {
           className="flex items-center justify-between mb-6 sm:mb-8 flex-col sm:flex-row gap-4 sm:gap-0"
         >
           <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-            <Link href="/" className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0">
-              <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
-            </Link>
-            <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-              Nested Attack 實戰分析
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Link href="/" className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0">
+                <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
+              </Link>
+            </motion.div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+              Nested Attack
             </h1>
           </div>
           
           <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
-            <button
+            <motion.button
               onClick={togglePlayPause}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-sm sm:text-base"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               {isPlaying ? <Pause size={16} className="sm:w-5 sm:h-5" /> : <Play size={16} className="sm:w-5 sm:h-5" />}
               {isPlaying ? "暫停" : "播放"}
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               onClick={resetAnimation}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors text-sm sm:text-base"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors shadow-lg"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <RotateCcw size={16} className="sm:w-5 sm:h-5" />
+              <RotateCcw size={20} />
               重置
-            </button>
+            </motion.button>
           </div>
         </motion.div>
 

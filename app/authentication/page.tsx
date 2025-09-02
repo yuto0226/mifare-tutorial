@@ -292,7 +292,7 @@ export default function AuthenticationPage() {
               </Link>
             </motion.div>
             <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-              Mifare Classic 加密驗證
+              Mifare Classic 安全機制
             </h1>
           </div>
           

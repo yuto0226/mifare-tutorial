@@ -2146,7 +2146,7 @@ export default function MemoryPage() {
               <ArrowLeft size={24} />
             </Link>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Mifare Classic 記憶體分布
+              Mifare Classic 記憶體結構
             </h1>
           </div>
         </motion.div>
