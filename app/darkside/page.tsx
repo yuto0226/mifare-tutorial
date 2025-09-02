@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Play, Pause, RotateCcw, Zap, AlertTriangle, Target } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Pause, RotateCcw, Zap, AlertTriangle, Target } from "lucide-react";
 import Link from "next/link";
 
 interface DarksideStep {
@@ -148,71 +148,71 @@ export default function DarksideAttackPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl pb-20 lg:pb-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
+          className="flex items-center justify-between mb-6 sm:mb-8 flex-col sm:flex-row gap-4 sm:gap-0"
         >
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-orange-400 hover:text-orange-300 transition-colors">
-              <ArrowLeft size={24} />
+          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <Link href="/" className="text-orange-400 hover:text-orange-300 transition-colors flex-shrink-0">
+              <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
             </Link>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+            <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
               Darkside Attack 分析
             </h1>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <button
               onClick={togglePlayPause}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors text-sm sm:text-base"
             >
-              {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+              {isPlaying ? <Pause size={16} className="sm:w-5 sm:h-5" /> : <Play size={16} className="sm:w-5 sm:h-5" />}
               {isPlaying ? "暫停" : "播放"}
             </button>
             <button
               onClick={resetAnimation}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors text-sm sm:text-base"
             >
-              <RotateCcw size={20} />
+              <RotateCcw size={16} className="sm:w-5 sm:h-5" />
               重置
             </button>
           </div>
         </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* 主要動畫區域 */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 order-2 lg:order-1">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 mb-6"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl lg:rounded-2xl p-3 sm:p-6 lg:p-8 mb-4 sm:mb-6"
             >
               {/* 當前步驟標題 */}
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold mb-2">
+              <div className="text-center mb-4 sm:mb-6 lg:mb-8">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2">
                   步驟 {currentStep + 1}: {darksideSteps[currentStep]?.title}
                 </h3>
-                <p className="text-slate-300 mb-4">
+                <p className="text-slate-300 mb-3 sm:mb-4 text-sm sm:text-base">
                   {darksideSteps[currentStep]?.description}
                 </p>
-                <div className="flex items-center justify-center gap-4">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-600/20 border border-orange-500/30 rounded-full text-orange-400 text-sm">
-                    <Zap size={14} />
+                <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+                  <div className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-orange-600/20 border border-orange-500/30 rounded-full text-orange-400 text-xs sm:text-sm">
+                    <Zap size={12} className="sm:w-4 sm:h-4" />
                     {darksideSteps[currentStep]?.phase}
                   </div>
-                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${getErrorTypeColor(darksideSteps[currentStep]?.errorType)}`}>
-                    <AlertTriangle size={14} />
+                  <div className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm ${getErrorTypeColor(darksideSteps[currentStep]?.errorType)}`}>
+                    <AlertTriangle size={12} className="sm:w-4 sm:h-4" />
                     {darksideSteps[currentStep]?.errorType}
                   </div>
                 </div>
               </div>
 
               {/* 攻擊動畫區域 */}
-              <div className="bg-slate-900/50 border border-slate-600/30 rounded-lg p-8 mb-6">
-                <div className="flex items-center justify-between mb-8">
+              <div className="bg-slate-900/50 border border-slate-600/30 rounded-lg p-3 sm:p-6 lg:p-8 mb-4 sm:mb-6">
+                <div className="flex items-center justify-between mb-4 sm:mb-6 lg:mb-8">
                   {/* 攻擊者 */}
                   <div className="text-center">
                     <motion.div 
@@ -229,15 +229,15 @@ export default function DarksideAttackPage() {
                         repeat: Infinity,
                         repeatType: "reverse"
                       }}
-                      className="w-24 h-32 bg-gradient-to-b from-orange-500 to-red-600 rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center"
+                      className="w-16 h-20 sm:w-20 sm:h-24 lg:w-24 lg:h-32 bg-gradient-to-b from-orange-500 to-red-600 rounded-lg mb-2 sm:mb-4 mx-auto shadow-lg flex items-center justify-center"
                     >
-                      <Target size={32} className="text-white" />
+                      <Target size={16} className="sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-white" />
                     </motion.div>
-                    <p className="text-sm text-slate-400">Darkside 攻擊者</p>
+                    <p className="text-xs sm:text-sm text-slate-400">Darkside 攻擊者</p>
                   </div>
 
                   {/* 錯誤注入動畫 */}
-                  <div className="flex-1 mx-8 relative h-24 flex flex-col items-center justify-center">
+                  <div className="flex-1 mx-4 sm:mx-6 lg:mx-8 relative h-12 sm:h-16 lg:h-24 flex flex-col items-center justify-center">
                     {/* 攻擊波形 */}
                     <motion.div
                       animate={{
@@ -249,7 +249,7 @@ export default function DarksideAttackPage() {
                         repeat: Infinity,
                         ease: "easeInOut",
                       }}
-                      className="absolute w-full h-2 bg-gradient-to-r from-transparent via-red-500 to-transparent rounded-full"
+                      className="absolute w-full h-1 sm:h-2 bg-gradient-to-r from-transparent via-red-500 to-transparent rounded-full"
                     />
                     
                     {/* 錯誤注入指示器 */}
@@ -263,14 +263,14 @@ export default function DarksideAttackPage() {
                         repeat: Infinity,
                         ease: "easeInOut",
                       }}
-                      className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center mb-2"
+                      className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 bg-red-500 rounded-full flex items-center justify-center mb-1 sm:mb-2"
                     >
-                      <Zap size={16} className="text-white" />
+                      <Zap size={10} className="sm:w-3 sm:h-3 lg:w-5 lg:h-5 text-white" />
                     </motion.div>
                     
                     {/* 資料流 */}
                     <div className="text-center">
-                      <div className="mb-1">
+                      <div className="mb-0.5 sm:mb-1">
                         <motion.div
                           animate={{
                             opacity: [0.5, 1, 0.5],
@@ -279,12 +279,12 @@ export default function DarksideAttackPage() {
                             duration: 2,
                             repeat: Infinity,
                           }}
-                          className="text-orange-400 text-xs font-mono bg-slate-800/70 px-2 py-1 rounded"
+                          className="text-orange-400 text-xs sm:text-sm font-mono bg-slate-800/70 px-1 sm:px-2 py-1 rounded"
                         >
                           {darksideSteps[currentStep]?.attackerAction}
                         </motion.div>
                       </div>
-                      <div className="text-blue-400 text-xs font-mono bg-slate-800/70 px-2 py-1 rounded">
+                      <div className="text-blue-400 text-xs sm:text-sm font-mono bg-slate-800/70 px-1 sm:px-2 py-1 rounded">
                         {darksideSteps[currentStep]?.cardResponse}
                       </div>
                     </div>
@@ -294,7 +294,7 @@ export default function DarksideAttackPage() {
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="absolute -bottom-4 flex gap-1"
+                        className="absolute -bottom-2 sm:-bottom-3 lg:-bottom-4 flex gap-1"
                       >
                         {[1, 0, 1, 1].map((bit, index) => (
                           <motion.div
@@ -307,7 +307,7 @@ export default function DarksideAttackPage() {
                               repeat: Infinity,
                               delay: index * 0.2,
                             }}
-                            className="w-3 h-3 rounded-full border border-slate-600"
+                            className="w-2 h-2 sm:w-3 sm:h-3 rounded-full border border-slate-600"
                           />
                         ))}
                       </motion.div>
@@ -325,15 +325,15 @@ export default function DarksideAttackPage() {
                           ['0 0 0px rgba(59, 130, 246, 0.5)', '0 0 10px rgba(59, 130, 246, 0.6)', '0 0 0px rgba(59, 130, 246, 0.5)']
                       }}
                       transition={{ duration: 1.5, repeat: Infinity }}
-                      className={`w-24 h-32 bg-gradient-to-b ${
+                      className={`w-16 h-20 sm:w-20 sm:h-24 lg:w-24 lg:h-32 bg-gradient-to-b ${
                         currentStep >= 7 ? 'from-red-500 to-red-700' : 
                         currentStep >= 2 ? 'from-orange-500 to-red-600' :
                         'from-blue-500 to-blue-700'
-                      } rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center`}
+                      } rounded-lg mb-2 sm:mb-4 mx-auto shadow-lg flex items-center justify-center`}
                     >
-                      <span className="text-white text-2xl">💳</span>
+                      <span className="text-white text-lg sm:text-xl lg:text-2xl">💳</span>
                     </motion.div>
-                    <p className="text-sm text-slate-400">Mifare 卡片</p>
+                    <p className="text-xs sm:text-sm text-slate-400">Mifare 卡片</p>
                   </div>
                 </div>
 
@@ -379,26 +379,70 @@ export default function DarksideAttackPage() {
                 </div>
               </motion.div>
             </motion.div>
+
+            {/* 手機版步驟導航按鈕 - 固定在螢幕底部 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-sm border-t border-slate-700 p-4 z-50"
+            >
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => goToStep(Math.max(0, currentStep - 1))}
+                  disabled={currentStep === 0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors min-h-[44px] ${
+                    currentStep === 0
+                      ? "bg-slate-700/50 text-slate-500 cursor-not-allowed"
+                      : "bg-orange-600 hover:bg-orange-700 text-white"
+                  }`}
+                >
+                  <ArrowLeft size={16} />
+                  上一步
+                </button>
+                
+                <div className="text-center px-4">
+                  <div className="text-sm font-medium text-white">
+                    步驟 {currentStep + 1} / {darksideSteps.length}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    {darksideSteps[currentStep]?.title}
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => goToStep(Math.min(darksideSteps.length - 1, currentStep + 1))}
+                  disabled={currentStep === darksideSteps.length - 1}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors min-h-[44px] ${
+                    currentStep === darksideSteps.length - 1
+                      ? "bg-slate-700/50 text-slate-500 cursor-not-allowed"
+                      : "bg-orange-600 hover:bg-orange-700 text-white"
+                  }`}
+                >
+                  下一步
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </motion.div>
           </div>
 
-          {/* 側邊欄 */}
-          <div className="space-y-6 max-h-[calc(100vh-12rem)] flex flex-col">
+          {/* 側邊欄 - 只在大螢幕顯示 */}
+          <div className="hidden lg:block space-y-4 sm:space-y-6 lg:max-h-[calc(100vh-12rem)] flex flex-col order-1 lg:order-2">
             {/* 步驟導航 */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 flex-1 flex flex-col min-h-0"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 flex-1 flex flex-col min-h-0"
             >
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 flex-shrink-0">
-                <Zap size={18} className="text-orange-400" />
+              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 flex-shrink-0">
+                <Zap size={16} className="sm:w-5 sm:h-5 text-orange-400" />
                 攻擊步驟
               </h3>
-              <div className="space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
+              <div className="flex lg:flex-col gap-2 lg:gap-2 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto flex-1 lg:pr-2 pb-2 lg:pb-0 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
                 {darksideSteps.map((step, index) => (
                   <motion.button
                     key={step.id}
                     onClick={() => goToStep(index)}
-                    className={`w-full text-left p-3 rounded-lg transition-all duration-300 ${
+                    className={`flex-shrink-0 lg:w-full text-left p-2 sm:p-3 rounded-lg transition-all duration-300 min-w-[200px] lg:min-w-0 min-h-[44px] ${
                       index === currentStep
                         ? "bg-orange-600/30 border border-orange-500/50 text-white shadow-lg"
                         : index < currentStep
@@ -408,8 +452,8 @@ export default function DarksideAttackPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                         index === currentStep
                           ? "bg-orange-500 text-white"
                           : index < currentStep
@@ -418,9 +462,9 @@ export default function DarksideAttackPage() {
                       }`}>
                         {index + 1}
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{step.title}</p>
-                        <p className="text-xs opacity-75">{step.phase}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-xs sm:text-sm truncate">{step.title}</p>
+                        <p className="text-xs opacity-75 truncate hidden sm:block lg:block">{step.phase}</p>
                       </div>
                     </div>
                   </motion.button>
@@ -433,24 +477,24 @@ export default function DarksideAttackPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 flex-shrink-0"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 flex-shrink-0"
             >
-              <h3 className="text-lg font-bold mb-4 text-orange-400">攻擊特性</h3>
-              <div className="space-y-3 text-sm">
+              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 text-orange-400">攻擊特性</h3>
+              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
                   <span>無需已知金鑰</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
                   <span>攻擊時間短（分鐘級）</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
                   <span>成功率接近 100%</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></div>
                   <span>需要錯誤注入能力</span>
                 </div>
               </div>

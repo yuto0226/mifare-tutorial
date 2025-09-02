@@ -60,7 +60,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* 檔案瀏覽器風格的頭部 */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -75,7 +75,7 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-2 text-slate-400">
               <Folder size={16} />
-              <span className="text-sm">Mifare Classic 視覺化展示</span>
+              <span className="text-xs sm:text-sm">Mifare Classic 視覺化展示</span>
             </div>
           </div>
         </motion.div>
@@ -88,7 +88,7 @@ export default function HomePage() {
           className="bg-slate-800/30 backdrop-blur-sm border border-slate-700 border-t-0 rounded-b-xl p-8"
         >
           {/* 路徑導航 */}
-          <div className="flex items-center gap-2 text-sm text-slate-400 mb-8">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 mb-8">
             <BookOpen size={16} />
             <span>展示首頁</span>
             <ArrowRight size={14} />
@@ -97,7 +97,7 @@ export default function HomePage() {
 
           {/* 視覺化模組網格 - 檔案瀏覽器風格 */}
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-200 mb-6">選擇展示模組</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-200 mb-6">選擇展示模組</h2>
             
             <div className="grid gap-4">
               {sections.map((section, index) => (
@@ -108,9 +108,9 @@ export default function HomePage() {
                   transition={{ delay: 0.1 * index }}
                 >
                   <Link href={section.href}>
-                    <div className="group flex items-center gap-4 p-4 bg-slate-700/30 hover:bg-slate-700/50 border border-slate-600/50 hover:border-slate-500 rounded-lg transition-all duration-300 cursor-pointer">
+                    <div className="group flex items-center gap-4 p-4 bg-slate-700/30 hover:bg-slate-700/50 border border-slate-600/50 hover:border-slate-500 rounded-lg transition-all duration-300 cursor-pointer min-h-[80px] sm:min-h-[auto]">
                       {/* 檔案圖標區域 */}
-                      <div className="relative">
+                      <div className="relative flex-shrink-0">
                         <div className={`p-3 rounded-lg bg-gradient-to-br ${section.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                           <section.icon size={24} className="text-white" />
                         </div>
@@ -121,19 +121,19 @@ export default function HomePage() {
                       </div>
 
                       {/* 檔案資訊 */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <h3 className="text-lg font-semibold group-hover:text-blue-400 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1 flex-wrap sm:flex-nowrap">
+                          <h3 className="text-base sm:text-lg font-semibold group-hover:text-blue-400 transition-colors">
                             {section.title}
                           </h3>
-                          <span className="px-2 py-1 text-xs rounded-full bg-slate-600/50 text-slate-300">
+                          <span className="px-2 py-1 text-xs rounded-full bg-slate-600/50 text-slate-300 flex-shrink-0">
                             互動展示
                           </span>
                         </div>
-                        <p className="text-slate-400 text-sm mb-2">{section.description}</p>
+                        <p className="text-slate-400 text-xs sm:text-sm mb-2">{section.description}</p>
                         
                         {/* 檔案標籤 */}
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           {section.features.slice(0, 3).map((feature, idx) => (
                             <span key={idx} className="text-xs bg-slate-600/50 text-slate-300 px-2 py-1 rounded">
                               {feature}
@@ -146,7 +146,7 @@ export default function HomePage() {
                       </div>
 
                       {/* 進入箭頭 */}
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity opacity-50 sm:opacity-0">
                         <ArrowRight size={20} className="text-slate-400" />
                       </div>
                     </div>
@@ -162,12 +162,12 @@ export default function HomePage() {
               transition={{ delay: 0.6 }}
               className="mt-8 pt-6 border-t border-slate-600/50"
             >
-              <div className="flex justify-between items-center text-sm text-slate-400">
-                <div className="flex gap-6">
+              <div className="flex justify-between items-center text-xs sm:text-sm text-slate-400 flex-col sm:flex-row gap-3 sm:gap-0">
+                <div className="flex gap-6 flex-wrap justify-center sm:justify-start">
                   <span>5 個展示模組</span>
                   <span>類型: 互動視覺化</span>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-4 flex-wrap justify-center sm:justify-end">
                   <span>13.56 MHz</span>
                   <span>1024 bytes</span>
                   <span>Crypto-1</span>
@@ -184,7 +184,7 @@ export default function HomePage() {
           transition={{ delay: 0.8 }}
           className="text-center mt-8"
         >
-          <p className="text-slate-500 text-sm">
+          <p className="text-slate-500 text-xs sm:text-sm">
             點擊模組卡片開始視覺化展示 • 互動式原理演示
           </p>
         </motion.div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Play, Pause, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Pause, RotateCcw } from "lucide-react";
 import Link from "next/link";
 
 interface Step {
@@ -147,61 +147,61 @@ export default function CommunicationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl pb-20 lg:pb-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
+          className="flex items-center justify-between mb-6 sm:mb-8 flex-col sm:flex-row gap-4 sm:gap-0"
         >
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-blue-400 hover:text-blue-300 transition-colors">
-              <ArrowLeft size={24} />
+          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <Link href="/" className="text-blue-400 hover:text-blue-300 transition-colors flex-shrink-0">
+              <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
             </Link>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent leading-tight">
               Mifare Classic 通訊過程
             </h1>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <button
               onClick={togglePlayPause}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm sm:text-base"
             >
-              {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+              {isPlaying ? <Pause size={16} className="sm:w-5 sm:h-5" /> : <Play size={16} className="sm:w-5 sm:h-5" />}
               {isPlaying ? "暫停" : "播放"}
             </button>
             <button
               onClick={resetAnimation}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors text-sm sm:text-base"
             >
-              <RotateCcw size={20} />
+              <RotateCcw size={16} className="sm:w-5 sm:h-5" />
               重置
             </button>
           </div>
         </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* 主要動畫區域 */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 order-2 lg:order-1">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 mb-6"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-4 sm:p-8 mb-4 sm:mb-6"
             >
               {/* 當前步驟標題 */}
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold mb-2">
+              <div className="text-center mb-6 sm:mb-8">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2">
                   步驟 {currentStep + 1}: {communicationSteps[currentStep]?.title}
                 </h3>
-                <p className="text-slate-300 mb-6">
+                <p className="text-slate-300 mb-4 sm:mb-6 text-sm sm:text-base leading-relaxed">
                   {communicationSteps[currentStep]?.description}
                 </p>
               </div>
 
               {/* 統一的通訊動畫區域 */}
-              <div className="bg-slate-900/50 border border-slate-600/30 rounded-lg p-8 mb-6">
-                <div className="flex items-center justify-between mb-8">
+              <div className="bg-slate-900/50 border border-slate-600/30 rounded-lg p-4 sm:p-8 mb-4 sm:mb-6">
+                <div className="flex items-center justify-between mb-6 sm:mb-8">
                   {/* 讀卡機 */}
                   <div className="text-center">
                     <motion.div 
@@ -212,15 +212,15 @@ export default function CommunicationPage() {
                           '0 0 0px rgba(59, 130, 246, 0.5)'
                       }}
                       transition={{ duration: 1, repeat: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? Infinity : 0 }}
-                      className="w-24 h-32 bg-gradient-to-b from-blue-500 to-blue-700 rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center"
+                      className="w-16 h-20 sm:w-24 sm:h-32 bg-gradient-to-b from-blue-500 to-blue-700 rounded-lg mb-2 sm:mb-4 mx-auto shadow-lg flex items-center justify-center"
                     >
-                      <span className="text-white text-2xl">📡</span>
+                      <span className="text-white text-lg sm:text-2xl">📡</span>
                     </motion.div>
-                    <p className="text-sm text-slate-400">讀卡機 (Reader)</p>
+                    <p className="text-xs sm:text-sm text-slate-400">讀卡機 (Reader)</p>
                   </div>
 
                   {/* 資料傳輸動畫區域 */}
-                  <div className="flex-1 mx-8 relative h-20 flex items-center">
+                  <div className="flex-1 mx-4 sm:mx-8 relative h-12 sm:h-20 flex items-center">
                     {/* RF 場域背景 */}
                     <motion.div
                       animate={{
@@ -233,7 +233,7 @@ export default function CommunicationPage() {
                       }}
                       className="absolute inset-0 border-2 border-dashed border-yellow-400 rounded-lg"
                     >
-                      <span className="absolute -top-6 left-2 text-yellow-400 text-xs">
+                      <span className="absolute -top-4 sm:-top-6 left-1 sm:left-2 text-yellow-400 text-xs">
                         RF Field (13.56 MHz)
                       </span>
                     </motion.div>
@@ -244,11 +244,11 @@ export default function CommunicationPage() {
                         <motion.div
                           key={`data-${currentStep}`}
                           initial={{ 
-                            x: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? -120 : 120,
+                            x: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? -60 : 60,
                             opacity: 0 
                           }}
                           animate={{ 
-                            x: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? 120 : -120,
+                            x: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? 60 : -60,
                             opacity: [0, 1, 1, 0] 
                           }}
                           transition={{ 
@@ -256,7 +256,7 @@ export default function CommunicationPage() {
                             repeat: Infinity,
                             ease: "easeInOut"
                           }}
-                          className="absolute bg-blue-500 text-white px-3 py-1 rounded text-sm font-mono whitespace-nowrap top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                          className="absolute bg-blue-500 text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-mono whitespace-nowrap top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
                         >
                           {communicationSteps[currentStep]?.data}
                         </motion.div>
@@ -273,7 +273,7 @@ export default function CommunicationPage() {
                           duration: communicationSteps[currentStep]?.dataDirection === 'none' ? 1.5 : 1,
                           repeat: Infinity,
                         }}
-                        className="text-3xl text-white"
+                        className="text-xl sm:text-3xl text-white"
                       >
                         {communicationSteps[currentStep]?.dataDirection === 'reader-to-card' && '→'}
                         {communicationSteps[currentStep]?.dataDirection === 'card-to-reader' && '←'}
@@ -281,32 +281,6 @@ export default function CommunicationPage() {
                         {communicationSteps[currentStep]?.dataDirection === 'none' && '⚡'}
                       </motion.div>
                     </div>
-                    
-                    {/* 資料封包動畫 */}
-                    <AnimatePresence>
-                      {communicationSteps[currentStep]?.data && communicationSteps[currentStep]?.dataDirection !== 'none' && (
-                        <motion.div
-                          key={`data-${currentStep}`}
-                          initial={{ 
-                            x: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? -120 : 120,
-                            opacity: 0 
-                          }}
-                          animate={{ 
-                            x: communicationSteps[currentStep]?.dataDirection === 'reader-to-card' ? 120 : -120,
-                            opacity: [0, 1, 1, 1, 0] 
-                          }}
-                          transition={{ 
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                            times: [0, 0.2, 0.8, 0.9, 1]
-                          }}
-                          className="absolute bg-blue-500 text-white px-3 py-1 rounded text-sm font-mono whitespace-nowrap top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10"
-                        >
-                          {communicationSteps[currentStep]?.data}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
                   </div>
 
                   {/* 卡片 */}
@@ -319,19 +293,19 @@ export default function CommunicationPage() {
                           '0 0 0px rgba(147, 51, 234, 0.5)'
                       }}
                       transition={{ duration: 1, repeat: communicationSteps[currentStep]?.dataDirection === 'card-to-reader' ? Infinity : 0 }}
-                      className="w-20 h-28 bg-gradient-to-b from-purple-500 to-purple-700 rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center"
+                      className="w-16 h-20 sm:w-20 sm:h-28 bg-gradient-to-b from-purple-500 to-purple-700 rounded-lg mb-2 sm:mb-4 mx-auto shadow-lg flex items-center justify-center"
                     >
-                      <span className="text-white text-2xl">💳</span>
+                      <span className="text-white text-lg sm:text-2xl">💳</span>
                     </motion.div>
-                    <p className="text-sm text-slate-400">卡片 (Mifare)</p>
+                    <p className="text-xs sm:text-sm text-slate-400">卡片 (Mifare)</p>
                   </div>
                 </div>
 
                 {/* 流向與資料說明 */}
                 <div className="text-center">
-                  <div className="inline-flex items-center gap-3 bg-slate-800/50 rounded-lg px-4 py-2">
-                    <span className="text-slate-400 text-sm">資料流向：</span>
-                    <span className="text-yellow-400 font-mono font-bold">
+                  <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 bg-slate-800/50 rounded-lg px-3 sm:px-4 py-2">
+                    <span className="text-slate-400 text-xs sm:text-sm">資料流向：</span>
+                    <span className="text-yellow-400 font-mono font-bold text-xs sm:text-sm">
                       {communicationSteps[currentStep]?.dataDirection === 'reader-to-card' && '📡 讀卡機 → 卡片 💳'}
                       {communicationSteps[currentStep]?.dataDirection === 'card-to-reader' && '💳 卡片 → 讀卡機 📡'}
                       {communicationSteps[currentStep]?.dataDirection === 'both' && '📡 ↔ 💳 雙向通訊'}
@@ -339,8 +313,8 @@ export default function CommunicationPage() {
                     </span>
                     {communicationSteps[currentStep]?.data && (
                       <>
-                        <span className="text-slate-400 text-sm">資料：</span>
-                        <span className="text-blue-400 font-mono font-bold">
+                        <span className="text-slate-400 text-xs sm:text-sm">資料：</span>
+                        <span className="text-blue-400 font-mono font-bold text-xs sm:text-sm">
                           {communicationSteps[currentStep]?.data}
                         </span>
                       </>
@@ -354,13 +328,13 @@ export default function CommunicationPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-slate-900/30 border border-blue-500/20 rounded-lg p-6"
+                className="bg-slate-900/30 border border-blue-500/20 rounded-lg p-4 sm:p-6"
               >
-                <h3 className="text-lg font-bold mb-4 text-cyan-400 flex items-center gap-2">
-                  <span className="text-xl">📡</span>
+                <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 text-cyan-400 flex items-center gap-2">
+                  <span className="text-lg sm:text-xl">📡</span>
                   通訊原理
                 </h3>
-                <div className="text-sm text-slate-300 leading-relaxed">
+                <div className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={currentStep}
@@ -375,26 +349,70 @@ export default function CommunicationPage() {
                 </div>
               </motion.div>
             </motion.div>
+
+            {/* 手機版步驟導航按鈕 - 固定在螢幕底部 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-sm border-t border-slate-700 p-4 z-50"
+            >
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => goToStep(Math.max(0, currentStep - 1))}
+                  disabled={currentStep === 0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors min-h-[44px] ${
+                    currentStep === 0
+                      ? "bg-slate-700/50 text-slate-500 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  <ArrowLeft size={16} />
+                  上一步
+                </button>
+                
+                <div className="text-center px-4">
+                  <div className="text-sm font-medium text-white">
+                    步驟 {currentStep + 1} / {communicationSteps.length}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    {communicationSteps[currentStep]?.title}
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => goToStep(Math.min(communicationSteps.length - 1, currentStep + 1))}
+                  disabled={currentStep === communicationSteps.length - 1}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors min-h-[44px] ${
+                    currentStep === communicationSteps.length - 1
+                      ? "bg-slate-700/50 text-slate-500 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  下一步
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </motion.div>
           </div>
 
-          {/* 側邊欄 */}
-          <div className="space-y-6">
+          {/* 側邊欄 - 只在大螢幕顯示 */}
+          <div className="hidden lg:block space-y-4 sm:space-y-6 order-1 lg:order-2">
             {/* 步驟導航 */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 max-h-[calc(100vh-12rem)] flex flex-col"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 lg:max-h-[calc(100vh-12rem)] flex flex-col"
             >
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 flex-shrink-0">
+              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 flex-shrink-0">
                 <span className="text-blue-400">📡</span>
                 通訊步驟
               </h3>
-              <div className="space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
+              <div className="flex lg:flex-col gap-2 lg:gap-2 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto flex-1 lg:pr-2 pb-2 lg:pb-0 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
                 {communicationSteps.map((step, index) => (
                   <motion.button
                     key={step.id}
                     onClick={() => goToStep(index)}
-                    className={`w-full text-left p-3 rounded-lg transition-all duration-300 ${
+                    className={`flex-shrink-0 lg:w-full text-left p-2 sm:p-3 rounded-lg transition-all duration-300 min-w-[180px] lg:min-w-0 min-h-[44px] ${
                       index === currentStep
                         ? "bg-blue-600/30 border border-blue-500/50 text-white shadow-lg"
                         : index < currentStep
@@ -404,8 +422,8 @@ export default function CommunicationPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                         index === currentStep
                           ? "bg-blue-500 text-white"
                           : index < currentStep
@@ -414,9 +432,9 @@ export default function CommunicationPage() {
                       }`}>
                         {index + 1}
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{step.title}</p>
-                        <p className="text-xs opacity-75">ISO 14443-3 協定</p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-xs sm:text-sm truncate">{step.title}</p>
+                        <p className="text-xs opacity-75 hidden lg:block truncate">ISO 14443-3 協定</p>
                       </div>
                     </div>
                   </motion.button>

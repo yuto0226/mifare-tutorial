@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Play, Pause, RotateCcw, Shield, Target } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Pause, RotateCcw, Shield, Target } from "lucide-react";
 import Link from "next/link";
 
 interface NestedStep {
@@ -134,66 +134,65 @@ export default function NestedAttackPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl pb-20 lg:pb-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
+          className="flex items-center justify-between mb-6 sm:mb-8 flex-col sm:flex-row gap-4 sm:gap-0"
         >
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-red-400 hover:text-red-300 transition-colors">
-              <ArrowLeft size={24} />
+          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <Link href="/" className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0">
+              <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
             </Link>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+            <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
               Nested Attack 實戰分析
             </h1>
-            <p className="text-slate-400 text-sm mt-2">基於 Proxmark3 Iceman 版本的實際攻擊流程</p>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <button
               onClick={togglePlayPause}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-sm sm:text-base"
             >
-              {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+              {isPlaying ? <Pause size={16} className="sm:w-5 sm:h-5" /> : <Play size={16} className="sm:w-5 sm:h-5" />}
               {isPlaying ? "暫停" : "播放"}
             </button>
             <button
               onClick={resetAnimation}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors text-sm sm:text-base"
             >
-              <RotateCcw size={20} />
+              <RotateCcw size={16} className="sm:w-5 sm:h-5" />
               重置
             </button>
           </div>
         </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-8">
           {/* 主要動畫區域 */}
           <div className="lg:col-span-2">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 mb-6"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg lg:rounded-2xl p-3 sm:p-4 lg:p-8 mb-3 lg:mb-6"
             >
               {/* 當前步驟標題 */}
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold mb-2">
+              <div className="text-center mb-4 lg:mb-8">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 lg:mb-2">
                   步驟 {currentStep + 1}: {nestedSteps[currentStep]?.title}
                 </h3>
-                <p className="text-slate-300 mb-4">
+                <p className="text-slate-300 mb-2 lg:mb-4 text-sm lg:text-base">
                   {nestedSteps[currentStep]?.description}
                 </p>
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-600/20 border border-red-500/30 rounded-full text-red-400 text-sm">
-                  <Shield size={14} />
+                <div className="inline-flex items-center gap-1 lg:gap-2 px-2 lg:px-3 py-1 bg-red-600/20 border border-red-500/30 rounded-full text-red-400 text-xs lg:text-sm">
+                  <Shield size={12} className="lg:w-4 lg:h-4" />
                   {nestedSteps[currentStep]?.phase}
                 </div>
               </div>
 
               {/* 攻擊動畫區域 */}
-              <div className="bg-slate-900/50 border border-slate-600/30 rounded-lg p-8 mb-6">
-                <div className="flex items-center justify-between mb-8">
+              <div className="bg-slate-900/50 border border-slate-600/30 rounded-lg p-3 sm:p-4 lg:p-8 mb-3 lg:mb-6">
+                <div className="flex items-center justify-between mb-4 lg:mb-8">
                   {/* 攻擊者 */}
                   <div className="text-center">
                     <motion.div 
@@ -210,15 +209,15 @@ export default function NestedAttackPage() {
                         repeat: Infinity,
                         repeatType: "reverse"
                       }}
-                      className="w-24 h-32 bg-gradient-to-b from-red-500 to-red-700 rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center"
+                      className="w-16 h-20 sm:w-20 sm:h-24 lg:w-24 lg:h-32 bg-gradient-to-b from-red-500 to-red-700 rounded-lg mb-2 lg:mb-4 mx-auto shadow-lg flex items-center justify-center"
                     >
-                      <Target size={32} className="text-white" />
+                      <Target size={20} className="sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-white" />
                     </motion.div>
-                    <p className="text-sm text-slate-400">攻擊者 (Proxmark3)</p>
+                    <p className="text-xs lg:text-sm text-slate-400">攻擊者 (Proxmark3)</p>
                   </div>
 
                   {/* 攻擊流程動畫 */}
-                  <div className="flex-1 mx-8 relative h-20 flex items-center">
+                  <div className="flex-1 mx-4 lg:mx-8 relative h-12 lg:h-20 flex items-center">
                     {/* 攻擊向量 */}
                     <motion.div
                       animate={{
@@ -235,7 +234,7 @@ export default function NestedAttackPage() {
                     
                     {/* 資料流 */}
                     <div className="w-full text-center">
-                      <div className="mb-2">
+                      <div className="mb-1 lg:mb-2">
                         <motion.div
                           animate={{
                             opacity: [0.5, 1, 0.5],
@@ -244,12 +243,12 @@ export default function NestedAttackPage() {
                             duration: 2,
                             repeat: Infinity,
                           }}
-                          className="text-orange-400 text-xs font-mono bg-slate-800/70 px-2 py-1 rounded"
+                          className="text-orange-400 text-xs font-mono bg-slate-800/70 px-1 lg:px-2 py-1 rounded"
                         >
                           {nestedSteps[currentStep]?.attackerAction}
                         </motion.div>
                       </div>
-                      <div className="text-blue-400 text-xs font-mono bg-slate-800/70 px-2 py-1 rounded">
+                      <div className="text-blue-400 text-xs font-mono bg-slate-800/70 px-1 lg:px-2 py-1 rounded">
                         {nestedSteps[currentStep]?.cardResponse}
                       </div>
                     </div>
@@ -279,11 +278,11 @@ export default function NestedAttackPage() {
                           ['0 0 0px rgba(59, 130, 246, 0.5)', '0 0 10px rgba(59, 130, 246, 0.6)', '0 0 0px rgba(59, 130, 246, 0.5)']
                       }}
                       transition={{ duration: 2, repeat: Infinity }}
-                      className={`w-24 h-32 bg-gradient-to-b ${currentStep >= 7 ? 'from-red-500 to-red-700' : 'from-blue-500 to-blue-700'} rounded-lg mb-4 mx-auto shadow-lg flex items-center justify-center`}
+                      className={`w-16 h-20 sm:w-20 sm:h-24 lg:w-24 lg:h-32 bg-gradient-to-b ${currentStep >= 7 ? 'from-red-500 to-red-700' : 'from-blue-500 to-blue-700'} rounded-lg mb-2 lg:mb-4 mx-auto shadow-lg flex items-center justify-center`}
                     >
-                      <span className="text-white text-2xl">💳</span>
+                      <span className="text-white text-lg sm:text-xl lg:text-2xl">💳</span>
                     </motion.div>
-                    <p className="text-sm text-slate-400">Mifare 卡片</p>
+                    <p className="text-xs lg:text-sm text-slate-400">Mifare 卡片</p>
                   </div>
                 </div>
 
@@ -291,13 +290,13 @@ export default function NestedAttackPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-900/20 border border-red-500/30 rounded-lg p-4"
+                  className="bg-red-900/20 border border-red-500/30 rounded-lg p-2 lg:p-4"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shield size={16} className="text-red-400" />
-                    <span className="text-red-400 font-semibold text-sm">安全漏洞</span>
+                  <div className="flex items-center gap-1 lg:gap-2 mb-1 lg:mb-2">
+                    <Shield size={14} className="lg:w-4 lg:h-4 text-red-400" />
+                    <span className="text-red-400 font-semibold text-xs lg:text-sm">安全漏洞</span>
                   </div>
-                  <p className="text-slate-300 text-sm">
+                  <p className="text-slate-300 text-xs lg:text-sm">
                     {nestedSteps[currentStep]?.vulnerability}
                   </p>
                 </motion.div>
@@ -308,13 +307,13 @@ export default function NestedAttackPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-slate-900/30 border border-red-500/20 rounded-lg p-6"
+                className="bg-slate-900/30 border border-red-500/20 rounded-lg p-3 sm:p-4 lg:p-6"
               >
-                <h3 className="text-lg font-bold mb-4 text-orange-400 flex items-center gap-2">
-                  <Shield size={18} />
+                <h3 className="text-base sm:text-lg font-bold mb-2 lg:mb-4 text-orange-400 flex items-center gap-2">
+                  <Shield size={16} className="lg:w-5 lg:h-5" />
                   攻擊原理
                 </h3>
-                <div className="text-sm text-slate-300 leading-relaxed">
+                <div className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={currentStep}
@@ -329,26 +328,70 @@ export default function NestedAttackPage() {
                 </div>
               </motion.div>
             </motion.div>
+
+            {/* 手機版步驟導航按鈕 - 固定在螢幕底部 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-sm border-t border-slate-700 p-4 z-50"
+            >
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => goToStep(Math.max(0, currentStep - 1))}
+                  disabled={currentStep === 0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors min-h-[44px] ${
+                    currentStep === 0
+                      ? "bg-slate-700/50 text-slate-500 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white"
+                  }`}
+                >
+                  <ArrowLeft size={16} />
+                  上一步
+                </button>
+                
+                <div className="text-center px-4">
+                  <div className="text-sm font-medium text-white">
+                    步驟 {currentStep + 1} / {nestedSteps.length}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    {nestedSteps[currentStep]?.title}
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => goToStep(Math.min(nestedSteps.length - 1, currentStep + 1))}
+                  disabled={currentStep === nestedSteps.length - 1}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors min-h-[44px] ${
+                    currentStep === nestedSteps.length - 1
+                      ? "bg-slate-700/50 text-slate-500 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white"
+                  }`}
+                >
+                  下一步
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </motion.div>
           </div>
 
-          {/* 側邊欄 */}
-          <div className="space-y-6">
+          {/* 側邊欄 - 只在大螢幕顯示 */}
+          <div className="hidden lg:block space-y-3 lg:space-y-6">
             {/* 步驟導航 */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 max-h-[calc(100vh-12rem)] flex flex-col"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg lg:rounded-2xl p-3 sm:p-4 lg:p-6 max-h-[calc(100vh-12rem)] flex flex-col"
             >
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 flex-shrink-0">
-                <Shield size={18} className="text-red-400" />
+              <h3 className="text-base sm:text-lg font-bold mb-2 lg:mb-4 flex items-center gap-2 flex-shrink-0">
+                <Shield size={16} className="lg:w-5 lg:h-5 text-red-400" />
                 攻擊步驟
               </h3>
-              <div className="space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
+              <div className="space-y-1 lg:space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
                 {nestedSteps.map((step, index) => (
                   <motion.button
                     key={step.id}
                     onClick={() => goToStep(index)}
-                    className={`w-full text-left p-3 rounded-lg transition-all duration-300 ${
+                    className={`w-full text-left p-2 lg:p-3 rounded-lg transition-all duration-300 touch-manipulation min-h-[44px] ${
                       index === currentStep
                         ? "bg-red-600/30 border border-red-500/50 text-white shadow-lg"
                         : index < currentStep
@@ -358,8 +401,8 @@ export default function NestedAttackPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    <div className="flex items-center gap-2 lg:gap-3">
+                      <div className={`w-5 h-5 lg:w-6 lg:h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                         index === currentStep
                           ? "bg-red-500 text-white"
                           : index < currentStep
@@ -369,7 +412,7 @@ export default function NestedAttackPage() {
                         {index + 1}
                       </div>
                       <div>
-                        <p className="font-medium text-sm">{step.title}</p>
+                        <p className="font-medium text-xs sm:text-sm">{step.title}</p>
                         <p className="text-xs opacity-75">{step.phase}</p>
                       </div>
                     </div>
