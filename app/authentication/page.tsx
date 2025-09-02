@@ -741,49 +741,51 @@ export default function AuthenticationPage() {
           </div>
 
           {/* 側邊欄 - 只在大螢幕顯示 */}
-          <div className="hidden lg:block space-y-3 lg:space-y-6 max-h-[calc(100vh-12rem)] flex flex-col">
+          <div className="hidden lg:flex lg:flex-col lg:h-[calc(100vh-12rem)] space-y-4 order-1 lg:order-2">
             {/* 驗證步驟列表 */}
             <motion.div 
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg lg:rounded-2xl p-3 sm:p-4 lg:p-6 flex-1 flex flex-col min-h-0"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 flex flex-col flex-1 min-h-0 overflow-hidden"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <h3 className="text-base sm:text-lg font-bold mb-2 sm:mb-4 flex items-center gap-2 flex-shrink-0">
+              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 flex-shrink-0">
                 <span className="text-green-400">🔐</span>
                 認證步驟
               </h3>
-              <div className="space-y-1 lg:space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
-                {authSteps.map((step, index) => (
-                  <motion.button
-                    key={step.id}
-                    onClick={() => goToStep(index)}
-                    className={`w-full text-left p-2 lg:p-3 rounded-lg transition-all duration-300 touch-manipulation min-h-[44px] ${
-                      index === currentStep
-                        ? "bg-green-600/30 border border-green-500/50 text-white shadow-lg"
-                        : index < currentStep
-                        ? "bg-emerald-900/30 text-emerald-400"
-                        : "bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 hover:text-white"
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="flex items-center gap-2 lg:gap-3">
-                      <div className={`w-5 h-5 lg:w-6 lg:h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+              <div className="overflow-y-auto flex-1 lg:pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
+                <div className="space-y-2">
+                  {authSteps.map((step, index) => (
+                    <motion.button
+                      key={step.id}
+                      onClick={() => goToStep(index)}
+                      className={`w-full text-left p-2 sm:p-3 rounded-lg transition-all duration-300 min-h-[44px] ${
                         index === currentStep
-                          ? "bg-green-500 text-white"
+                          ? "bg-green-600/30 border border-green-500/50 text-white shadow-lg"
                           : index < currentStep
-                          ? "bg-emerald-500 text-white"
-                          : "bg-slate-600 text-slate-400"
-                      }`}>
-                        {index + 1}
+                          ? "bg-emerald-900/30 text-emerald-400"
+                          : "bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 hover:text-white"
+                      }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                          index === currentStep
+                            ? "bg-green-500 text-white"
+                            : index < currentStep
+                            ? "bg-emerald-500 text-white"
+                            : "bg-slate-600 text-slate-400"
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-xs sm:text-sm truncate">{step.title}</p>
+                          <p className="text-xs opacity-75 hidden lg:block truncate">Crypto-1 驗證</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-xs sm:text-sm">{step.title}</p>
-                        <p className="text-xs opacity-75">Crypto-1 驗證</p>
-                      </div>
-                    </div>
-                  </motion.button>
-                ))}
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             </motion.div>
 
