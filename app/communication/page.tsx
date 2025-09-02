@@ -163,7 +163,7 @@ export default function CommunicationPage() {
                 <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
               </Link>
             </motion.div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl lg:text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
               Mifare Classic 通訊協定
             </h1>
           </div>
@@ -171,7 +171,7 @@ export default function CommunicationPage() {
           <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <motion.button
               onClick={togglePlayPause}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-lg text-base sm:text-lg lg:text-xl"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -180,7 +180,7 @@ export default function CommunicationPage() {
             </motion.button>
             <motion.button
               onClick={resetAnimation}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors shadow-lg"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors shadow-lg text-base sm:text-lg lg:text-xl"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
